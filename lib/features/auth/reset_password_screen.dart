@@ -7,43 +7,58 @@ import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/custom_text_field.dart';
 import '../../services/auth_service.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+class ResetPasswordScreen extends StatefulWidget {
+  const ResetPasswordScreen({
+    super.key,
+    required this.email,
+    required this.resetToken,
+  });
+
+  final String email;
+  final String resetToken;
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmController = TextEditingController();
   final _authService = AuthService();
 
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleSendCode() async {
+  Future<void> _handleReset() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    final result = await _authService.forgotPassword(
-      email: _emailController.text.trim(),
+    final result = await _authService.resetPassword(
+      email: widget.email,
+      resetToken: widget.resetToken,
+      newPassword: _passwordController.text,
     );
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (result.success) {
-      Navigator.pushNamed(
+      // Drop ForgotPassword / VerifyCode / ResetPassword from the
+      // stack, keeping Login underneath, then show the success screen.
+      Navigator.pushNamedAndRemoveUntil(
         context,
-        AppRoutes.verifyResetCode,
-        arguments: {'email': _emailController.text.trim()},
+        AppRoutes.resetSuccess,
+        ModalRoute.withName(AppRoutes.login),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -86,7 +101,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  AppStrings.forgotPasswordTitle,
+                  AppStrings.newPasswordTitle,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -95,36 +110,46 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  AppStrings.forgotPasswordSubtitle,
+                  AppStrings.newPasswordSubtitle,
                   style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 28),
                 CustomTextField(
-                  controller: _emailController,
-                  hintText: AppStrings.emailOrPhoneHint,
-                  prefixIcon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: Validators.email,
+                  controller: _passwordController,
+                  hintText: AppStrings.newPasswordHint,
+                  prefixIcon: Icons.lock_outline,
+                  obscureText: _obscurePassword,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                  validator: Validators.password,
+                ),
+                const SizedBox(height: 16),
+                CustomTextField(
+                  controller: _confirmController,
+                  hintText: AppStrings.confirmPasswordHint,
+                  prefixIcon: Icons.lock_outline,
+                  obscureText: _obscureConfirm,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                  ),
+                  validator: (value) => Validators.confirmPassword(value, _passwordController.text),
                 ),
                 const SizedBox(height: 24),
                 CustomButton(
-                  label: AppStrings.sendCode,
+                  label: AppStrings.resetPasswordBtn,
                   isLoading: _isLoading,
-                  onPressed: _handleSendCode,
-                ),
-                const SizedBox(height: 20),
-                Center(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      AppStrings.backToLogin,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
+                  onPressed: _handleReset,
                 ),
                 const SizedBox(height: 24),
               ],
