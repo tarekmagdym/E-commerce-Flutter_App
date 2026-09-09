@@ -60,4 +60,14 @@ class AppStrings {
   static const String loginNow = 'Login';
   static const String accountCreatedTitle = 'Account Created Successfully';
   static const String accountCreatedSubtitle = 'You can now log in to your account';
+
+  // Home Screen
+  static const String homeGreeting = 'Hello, Ahmed 👋';
+  static const String homeSubtitle = 'Shop your favorite products';
+  static const String searchHint = 'Search for products...';
+  static const String newCollectionTitle = 'New Collection';
+  static const String newCollectionSubtitle = 'Up to 50% Off';
+  static const String shopNow = 'Shop Now';
+  static const String bestSellers = 'Best Sellers';
+  static const String seeAll = 'See All';
 }

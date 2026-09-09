@@ -1,0 +1,161 @@
+import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
+import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/custom_text_field.dart';
+import '../../../models/category_model.dart';
+import '../../../models/product_model.dart';
+import 'home_controller.dart';
+import 'widgets/category_section.dart';
+import 'widgets/featured_products.dart';
+import 'widgets/home_banner.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _controller = HomeController();
+
+  List<CategoryModel> _categories = [];
+  List<ProductModel> _bestSellers = [];
+  String _selectedCategoryId = 'all';
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHomeData();
+  }
+
+  Future<void> _loadHomeData() async {
+    final results = await Future.wait([
+      _controller.loadCategories(),
+      _controller.loadBestSellers(),
+    ]);
+
+    if (!mounted) return;
+    setState(() {
+      _categories = results[0] as List<CategoryModel>;
+      _bestSellers = results[1] as List<ProductModel>;
+      _isLoading = false;
+    });
+  }
+
+  List<ProductModel> get _visibleProducts {
+    if (_selectedCategoryId == 'all') return _bestSellers;
+    return _bestSellers.where((p) => p.categoryId == _selectedCategoryId).toList();
+  }
+
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$feature — coming soon')),
+    );
+  }
+
+  void _handleBottomNavTap(int index) {
+    if (index == 0) return; // already on Home
+    const labels = ['Home', 'Categories', 'Cart', 'Profile'];
+    _showComingSoon(labels[index]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            : RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: _loadHomeData,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppStrings.homeGreeting,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          AppStrings.homeSubtitle,
+                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.notifications_none_rounded,
+                        color: AppColors.textPrimary,
+                      ),
+                      onPressed: () => _showComingSoon('Notifications'),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              CustomTextField(
+                hintText: AppStrings.searchHint,
+                prefixIcon: Icons.search_rounded,
+                onChanged: (_) {},
+              ),
+
+              const SizedBox(height: 20),
+
+              HomeBanner(onShopNow: () => _showComingSoon('Shop Now')),
+
+              const SizedBox(height: 24),
+
+              CategorySection(
+                categories: _categories,
+                selectedCategoryId: _selectedCategoryId,
+                onCategorySelected: (id) => setState(() => _selectedCategoryId = id),
+              ),
+
+              const SizedBox(height: 24),
+
+              FeaturedProducts(
+                products: _visibleProducts,
+                onSeeAll: () => _showComingSoon('Products'),
+                onProductTap: (product) => _showComingSoon(product.name),
+                onAddToCart: (product) => _showComingSoon('Add ${product.name} to cart'),
+              ),
+
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: 0,
+        onTap: _handleBottomNavTap,
+      ),
+    );
+  }
+}
