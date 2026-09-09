@@ -7,6 +7,7 @@ import '../features/auth/verify_reset_code_screen.dart';
 import '../features/auth/reset_password_screen.dart';
 import '../features/auth/reset_success_screen.dart';
 import '../features/user/home/home_screen.dart';
+import '../features/user/categories/categories_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -19,6 +20,7 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
   static const String resetSuccess = '/reset-success';
   static const String home = '/home';
+  static const String categories = '/categories';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -75,6 +77,15 @@ class AppRoutes {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const HomeScreen(),
+        );
+
+      case categories:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => CategoriesScreen(
+            initialCategoryId: args['categoryId'] as String?,
+          ),
         );
 
       default:

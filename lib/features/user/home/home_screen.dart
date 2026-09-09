@@ -5,6 +5,7 @@ import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../models/category_model.dart';
 import '../../../models/product_model.dart';
+import '../../../app/routes.dart';
 import 'home_controller.dart';
 import 'widgets/category_section.dart';
 import 'widgets/featured_products.dart';
@@ -57,9 +58,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleBottomNavTap(int index) {
-    if (index == 0) return; // already on Home
-    const labels = ['Home', 'Categories', 'Cart', 'Profile'];
-    _showComingSoon(labels[index]);
+    switch (index) {
+      case 0:
+        return; // already on Home
+      case 1:
+        Navigator.of(context).pushNamed(AppRoutes.categories);
+        break;
+      case 2:
+        _showComingSoon('Cart');
+        break;
+      case 3:
+        _showComingSoon('Profile');
+        break;
+    }
   }
 
   @override
@@ -142,7 +153,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
               FeaturedProducts(
                 products: _visibleProducts,
-                onSeeAll: () => _showComingSoon('Products'),
+                onSeeAll: () => Navigator.of(context).pushNamed(
+                  AppRoutes.categories,
+                  arguments: {'categoryId': _selectedCategoryId},
+                ),
                 onProductTap: (product) => _showComingSoon(product.name),
                 onAddToCart: (product) => _showComingSoon('Add ${product.name} to cart'),
               ),

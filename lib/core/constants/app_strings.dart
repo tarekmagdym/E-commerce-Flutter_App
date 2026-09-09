@@ -70,4 +70,15 @@ class AppStrings {
   static const String shopNow = 'Shop Now';
   static const String bestSellers = 'Best Sellers';
   static const String seeAll = 'See All';
+
+  // Categories Screen
+  static const String categoriesTitle = 'Categories';
+  static const String categoriesSearchHint = 'Search in this category...';
+  static const String noProductsTitle = 'No products found';
+  static const String noProductsSubtitle =
+      'Try a different category or search term';
+  static const String somethingWentWrong =
+      'Something went wrong. Please try again.';
+  static const String tryAgain = 'Try Again';
+  static const String productsCountSuffix = 'items';
 }
