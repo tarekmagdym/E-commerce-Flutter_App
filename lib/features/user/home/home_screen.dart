@@ -68,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _showComingSoon('Cart');
         break;
       case 3:
-        _showComingSoon('Profile');
+        Navigator.of(context).pushNamed(AppRoutes.profile);
         break;
     }
   }

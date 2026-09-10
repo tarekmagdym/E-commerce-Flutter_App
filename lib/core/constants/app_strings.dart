@@ -81,4 +81,66 @@ class AppStrings {
       'Something went wrong. Please try again.';
   static const String tryAgain = 'Try Again';
   static const String productsCountSuffix = 'items';
+
+  // Profile Screen
+  static const String profileTitle = 'Profile';
+  static const String memberSincePrefix = 'Member since';
+  static const String myOrders = 'My Orders';
+  static const String paymentMethods = 'Payment Methods';
+  static const String wishlist = 'Wishlist';
+  static const String settingsLabel = 'Settings';
+  static const String logout = 'Logout';
+  static const String logoutConfirmTitle = 'Log out?';
+  static const String logoutConfirmMessage =
+      'You will need to sign in again to access your account.';
+  static const String cancel = 'Cancel';
+  static const String account = 'Account';
+  static const String preferences = 'Preferences';
+  static const String ordersCountLabel = 'Orders';
+  static const String wishlistCountLabel = 'Wishlist';
+
+  // Edit Profile Screen
+  static const String editProfileTitle = 'Edit Profile';
+  static const String saveChanges = 'Save Changes';
+  static const String profileUpdatedMessage = 'Profile updated successfully';
+  static const String phoneHint = 'Phone Number';
+
+  // Orders Screen
+  static const String ordersTitle = 'My Orders';
+  static const String noOrdersTitle = 'No orders yet';
+  static const String noOrdersSubtitle = 'Your order history will show up here';
+  static const String orderIdPrefix = 'Order';
+
+  // Payment Methods Screen
+  static const String paymentMethodsTitle = 'Payment Methods';
+  static const String addPaymentMethod = 'Add Payment Method';
+  static const String defaultLabel = 'Default';
+  static const String expiresLabel = 'Expires';
+  static const String setAsDefault = 'Set as default';
+  static const String removeCard = 'Remove card';
+  static const String noPaymentMethodsTitle = 'No payment methods yet';
+  static const String noPaymentMethodsSubtitle =
+      'Add a card to check out faster next time';
+
+  // Wishlist Screen
+  static const String wishlistTitle = 'Wishlist';
+  static const String emptyWishlistTitle = 'Your wishlist is empty';
+  static const String emptyWishlistSubtitle =
+      'Tap the heart icon on any product to save it here';
+  static const String removedFromWishlist = 'Removed from wishlist';
+  static const String undo = 'Undo';
+
+  // Settings Screen
+  static const String settingsTitle = 'Settings';
+  static const String pushNotifications = 'Push Notifications';
+  static const String pushNotificationsSubtitle =
+      'Get notified about orders and offers';
+  static const String orderUpdates = 'Order Updates';
+  static const String orderUpdatesSubtitle = 'Email me about my order status';
+  static const String darkMode = 'Dark Mode';
+  static const String darkModeSubtitle = 'Switch to a darker color theme';
+  static const String languageLabel = 'Language';
+  static const String privacyPolicy = 'Privacy Policy';
+  static const String termsOfService = 'Terms of Service';
+  static const String appVersionLabel = 'App Version';
 }

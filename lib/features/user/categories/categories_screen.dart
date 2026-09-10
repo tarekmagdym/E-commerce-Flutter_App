@@ -103,7 +103,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         _showComingSoon('Cart');
         break;
       case 3:
-        _showComingSoon('Profile');
+        Navigator.of(context).pushReplacementNamed(AppRoutes.profile);
         break;
     }
   }

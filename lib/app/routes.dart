@@ -8,6 +8,7 @@ import '../features/auth/reset_password_screen.dart';
 import '../features/auth/reset_success_screen.dart';
 import '../features/user/home/home_screen.dart';
 import '../features/user/categories/categories_screen.dart';
+import '../features/user/profile/profile_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -21,6 +22,7 @@ class AppRoutes {
   static const String resetSuccess = '/reset-success';
   static const String home = '/home';
   static const String categories = '/categories';
+  static const String profile = '/profile';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -86,6 +88,12 @@ class AppRoutes {
           builder: (_) => CategoriesScreen(
             initialCategoryId: args['categoryId'] as String?,
           ),
+        );
+
+      case profile:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const ProfileScreen(),
         );
 
       default:

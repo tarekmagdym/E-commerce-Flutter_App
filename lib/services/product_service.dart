@@ -148,6 +148,14 @@ class ProductService {
     return _catalog.where((p) => p.categoryId == categoryId).toList();
   }
 
+  /// Mock saved-for-later items for the Wishlist screen.
+  Future<List<ProductModel>> getWishlist() async {
+    // Real call will be: GET /users/me/wishlist
+    await Future.delayed(const Duration(milliseconds: 400));
+    const wishlistIds = {'p1', 'p3', 'p9', 'p12'};
+    return _catalog.where((p) => wishlistIds.contains(p.id)).toList();
+  }
+
   Future<List<ProductModel>> getBestSellers() async {
     // Real call will be: GET /products?sort=best-sellers
     await Future.delayed(const Duration(milliseconds: 500));
