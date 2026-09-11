@@ -6,6 +6,7 @@ import '../../../core/widgets/loading_widget.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../models/product_model.dart';
 import '../../../services/product_service.dart';
+import '../../../services/cart_service.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -16,6 +17,7 @@ class FavoritesScreen extends StatefulWidget {
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
   final _service = ProductService();
+  final _cartService = CartService();
 
   List<ProductModel> _wishlist = [];
   bool _isLoading = true;
@@ -111,7 +113,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ProductCard(
                 product: product,
                 onTap: () => _showComingSoon(product.name),
-                onAddToCart: () => _showComingSoon('Add ${product.name} to cart'),
+                onAddToCart: () async {
+                  await _cartService.addItem(product);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${product.name} — ${AppStrings.addedToCart}')),
+                  );
+                },
               ),
               Positioned(
                 top: 8,

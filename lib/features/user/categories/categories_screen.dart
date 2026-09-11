@@ -11,6 +11,7 @@ import '../../../models/product_model.dart';
 import '../../../app/routes.dart';
 import '../home/widgets/category_section.dart';
 import 'categories_controller.dart';
+import '../../../services/cart_service.dart';
 
 /// Browse the full catalog, filtered by category chip and/or search text.
 ///
@@ -27,6 +28,7 @@ class CategoriesScreen extends StatefulWidget {
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
   final _controller = CategoriesController();
+  final _cartService = CartService();
 
   List<CategoryModel> _categories = [];
   List<ProductModel> _allProducts = [];
@@ -100,7 +102,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       case 1:
         break; // already on Categories
       case 2:
-        _showComingSoon('Cart');
+        Navigator.of(context).pushReplacementNamed(AppRoutes.cart);
         break;
       case 3:
         Navigator.of(context).pushReplacementNamed(AppRoutes.profile);
@@ -121,6 +123,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       body: SafeArea(child: _buildBody()),
       bottomNavigationBar: AppBottomNav(
         currentIndex: 1,
+        cartItemCount: _cartService.itemCount,
         onTap: _handleBottomNavTap,
       ),
     );
@@ -188,7 +191,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 return ProductCard(
                   product: product,
                   onTap: () => _showComingSoon(product.name),
-                  onAddToCart: () => _showComingSoon('Add ${product.name} to cart'),
+                  onAddToCart: () async {
+                    await _cartService.addItem(product);
+                    if (!mounted) return;
+                    setState(() {});
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${product.name} — ${AppStrings.addedToCart}')),
+                    );
+                  },
                 );
               },
             ),

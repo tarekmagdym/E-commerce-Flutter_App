@@ -12,6 +12,7 @@ import 'profile_controller.dart';
 import 'settings_screen.dart';
 import '../favorites/favorites_screen.dart';
 import '../orders/orders_screen.dart';
+import '../../../services/cart_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -79,7 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Navigator.of(context).pushReplacementNamed(AppRoutes.categories);
         break;
       case 2:
-        _showComingSoon('Cart');
+        Navigator.of(context).pushReplacementNamed(AppRoutes.cart);
         break;
       case 3:
         break; // already on Profile
@@ -152,6 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SafeArea(child: _buildBody()),
       bottomNavigationBar: AppBottomNav(
         currentIndex: 3,
+        cartItemCount: CartService().itemCount,
         onTap: _handleBottomNavTap,
       ),
     );

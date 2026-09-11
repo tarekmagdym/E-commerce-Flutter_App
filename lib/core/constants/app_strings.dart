@@ -82,6 +82,34 @@ class AppStrings {
   static const String tryAgain = 'Try Again';
   static const String productsCountSuffix = 'items';
 
+  // Cart Screen
+  static const String cartTitle = 'Shopping Cart';
+  static const String totalLabel = 'Total';
+  static const String checkout = 'Checkout';
+  static const String emptyCartTitle = 'Your cart is empty';
+  static const String emptyCartSubtitle = 'Looks like you haven\'t added anything yet';
+  static const String browseProducts = 'Browse Products';
+  static const String cartItemsCountSuffix = 'items';
+  static const String addedToCart = 'Added to cart';
+
+  // Checkout Screen
+  static const String checkoutTitle = 'Checkout';
+  static const String shippingAddress = 'Shipping Address';
+  static const String changeLabel = 'Change';
+  static const String paymentMethod = 'Payment Method';
+  static const String cashOnDelivery = 'Cash on Delivery';
+  static const String orderSummary = 'Order Summary';
+  static const String subtotalLabel = 'Subtotal';
+  static const String shippingFeeLabel = 'Shipping Fee';
+  static const String placeOrder = 'Place Order';
+  static const String orderPlacedTitle = 'Order Placed!';
+  static const String orderPlacedMessage =
+      'Your order has been placed successfully. You can track it from My Orders.';
+  static const String viewOrders = 'View Orders';
+  static const String continueShopping = 'Continue Shopping';
+
+  // Profile Screen
+
   // Profile Screen
   static const String profileTitle = 'Profile';
   static const String memberSincePrefix = 'Member since';

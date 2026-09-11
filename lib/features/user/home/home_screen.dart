@@ -10,6 +10,7 @@ import 'home_controller.dart';
 import 'widgets/category_section.dart';
 import 'widgets/featured_products.dart';
 import 'widgets/home_banner.dart';
+import '../../../services/cart_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _controller = HomeController();
+  final _cartService = CartService();
 
   List<CategoryModel> _categories = [];
   List<ProductModel> _bestSellers = [];
@@ -65,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.of(context).pushNamed(AppRoutes.categories);
         break;
       case 2:
-        _showComingSoon('Cart');
+        Navigator.of(context).pushReplacementNamed(AppRoutes.cart);
         break;
       case 3:
         Navigator.of(context).pushNamed(AppRoutes.profile);
@@ -158,7 +160,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   arguments: {'categoryId': _selectedCategoryId},
                 ),
                 onProductTap: (product) => _showComingSoon(product.name),
-                onAddToCart: (product) => _showComingSoon('Add ${product.name} to cart'),
+                onAddToCart: (product) async {
+                  await _cartService.addItem(product);
+                  if (!mounted) return;
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${product.name} — ${AppStrings.addedToCart}')),
+                  );
+                },
               ),
 
               const SizedBox(height: 16),
@@ -168,6 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentIndex: 0,
+        cartItemCount: _cartService.itemCount,
         onTap: _handleBottomNavTap,
       ),
     );

@@ -9,6 +9,7 @@ import '../features/auth/reset_success_screen.dart';
 import '../features/user/home/home_screen.dart';
 import '../features/user/categories/categories_screen.dart';
 import '../features/user/profile/profile_screen.dart';
+import '../features/user/cart/cart_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -23,6 +24,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String categories = '/categories';
   static const String profile = '/profile';
+  static const String cart = '/cart';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -94,6 +96,11 @@ class AppRoutes {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const ProfileScreen(),
+        );
+      case cart:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const CartScreen(),
         );
 
       default:
