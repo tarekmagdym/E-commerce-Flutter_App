@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../app/routes.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_strings.dart';
-import '../../core/utils/validators.dart';
-import '../../core/widgets/custom_button.dart';
-import '../../core/widgets/custom_text_field.dart';
-import '../../services/auth_service.dart';
+import '../../providers/auth_provider.dart';
 
+/// Step 1 of password reset: collects the email and asks the backend
+/// to email an OTP (POST /api/auth/forgot-password).
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -17,9 +15,6 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final _authService = AuthService();
-
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -27,106 +22,59 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  Future<void> _handleSendCode() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    final result = await _authService.forgotPassword(
-      email: _emailController.text.trim(),
-    );
-
+    final auth = context.read<AuthProvider>();
+    final email = _emailController.text.trim();
+    final success = await auth.forgotPassword(email: email);
     if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (result.success) {
-      Navigator.pushNamed(
-        context,
-        AppRoutes.verifyResetCode,
-        arguments: {'email': _emailController.text.trim()},
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.message)),
-      );
+    if (success) {
+      Navigator.of(context)
+          .pushNamed(AppRoutes.verifyResetCode, arguments: {'email': email});
+    } else if (auth.errorMessage != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(auth.errorMessage!)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Forgot Password')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+          padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: const Icon(Icons.lock_outline, color: Colors.white, size: 30),
-                  ),
+                const Text(
+                  'Enter the email associated with your account and we will '
+                  'send you a verification code.',
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  AppStrings.forgotPasswordTitle,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  AppStrings.forgotPasswordSubtitle,
-                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 28),
-                CustomTextField(
+                TextFormField(
                   controller: _emailController,
-                  hintText: AppStrings.emailOrPhoneHint,
-                  prefixIcon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
-                  validator: Validators.email,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Email is required';
+                    final regex = RegExp(r'^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$');
+                    if (!regex.hasMatch(v.trim())) return 'Enter a valid email';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 24),
-                CustomButton(
-                  label: AppStrings.sendCode,
-                  isLoading: _isLoading,
-                  onPressed: _handleSendCode,
+                ElevatedButton(
+                  onPressed: auth.isLoading ? null : _submit,
+                  child: auth.isLoading
+                      ? const SizedBox(
+                          height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Send Code'),
                 ),
-                const SizedBox(height: 20),
-                Center(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      AppStrings.backToLogin,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
               ],
             ),
           ),

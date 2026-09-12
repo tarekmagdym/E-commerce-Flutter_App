@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../app/routes.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_strings.dart';
-import '../../core/utils/validators.dart';
-import '../../core/widgets/custom_button.dart';
-import '../../core/widgets/custom_text_field.dart';
-import '../../services/auth_service.dart';
+import '../../providers/auth_provider.dart';
 
+/// Step 2 of password reset: verifies the OTP the user got by email
+/// (POST /api/auth/verify-reset-code). [email] is passed in from
+/// ForgotPasswordScreen via AppRoutes.verifyResetCode's arguments.
 class VerifyResetCodeScreen extends StatefulWidget {
   const VerifyResetCodeScreen({super.key, required this.email});
 
@@ -19,10 +18,6 @@ class VerifyResetCodeScreen extends StatefulWidget {
 class _VerifyResetCodeScreenState extends State<VerifyResetCodeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _codeController = TextEditingController();
-  final _authService = AuthService();
-
-  bool _isLoading = false;
-  bool _isResending = false;
 
   @override
   void dispose() {
@@ -30,124 +25,72 @@ class _VerifyResetCodeScreenState extends State<VerifyResetCodeScreen> {
     super.dispose();
   }
 
-  Future<void> _handleVerify() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    final result = await _authService.verifyResetCode(
+    final auth = context.read<AuthProvider>();
+    final success = await auth.verifyResetCode(
       email: widget.email,
       code: _codeController.text.trim(),
     );
-
     if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (result.success) {
-      Navigator.pushNamed(
-        context,
+    if (success && auth.resetToken != null) {
+      Navigator.of(context).pushNamed(
         AppRoutes.resetPassword,
-        arguments: {
-          'email': widget.email,
-          'resetToken': result.resetToken ?? '',
-        },
+        arguments: {'email': widget.email, 'resetToken': auth.resetToken},
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.message)),
-      );
+    } else if (auth.errorMessage != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(auth.errorMessage!)));
     }
   }
 
-  Future<void> _handleResend() async {
-    setState(() => _isResending = true);
-    final result = await _authService.forgotPassword(email: widget.email);
+  Future<void> _resendCode() async {
+    final auth = context.read<AuthProvider>();
+    final success = await auth.forgotPassword(email: widget.email);
     if (!mounted) return;
-    setState(() => _isResending = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.success ? 'Code resent to your email' : result.message),
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(success
+          ? 'A new code has been sent'
+          : (auth.errorMessage ?? 'Failed to resend code')),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Verify Code')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+          padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: const Icon(Icons.email_outlined, color: Colors.white, size: 30),
-                  ),
-                ),
+                Text('Enter the code we sent to ${widget.email}'),
                 const SizedBox(height: 24),
-                const Text(
-                  AppStrings.verifyCodeTitle,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '${AppStrings.verifyCodeSubtitlePrefix} ${widget.email}',
-                  style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 28),
-                CustomTextField(
+                TextFormField(
                   controller: _codeController,
-                  hintText: AppStrings.codeHint,
-                  prefixIcon: Icons.confirmation_number_outlined,
                   keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  textAlign: TextAlign.center,
-                  validator: Validators.code,
+                  decoration: const InputDecoration(labelText: 'Verification Code'),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Code is required' : null,
                 ),
                 const SizedBox(height: 24),
-                CustomButton(
-                  label: AppStrings.verifyCode,
-                  isLoading: _isLoading,
-                  onPressed: _handleVerify,
+                ElevatedButton(
+                  onPressed: auth.isLoading ? null : _submit,
+                  child: auth.isLoading
+                      ? const SizedBox(
+                          height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Verify'),
                 ),
-                const SizedBox(height: 20),
-                Center(
-                  child: TextButton(
-                    onPressed: _isResending ? null : _handleResend,
-                    child: Text(
-                      _isResending ? '...' : AppStrings.resendCode,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: auth.isLoading ? null : _resendCode,
+                  child: const Text("Didn't get a code? Resend"),
                 ),
-                const SizedBox(height: 24),
               ],
             ),
           ),

@@ -1,95 +1,96 @@
+import '../core/network/api_client.dart';
+import '../core/network/api_endpoints.dart';
 import '../models/auth_result_model.dart';
 
-/// Handles authentication-related operations.
-///
-/// Currently mocked with local delays so the UI is fully testable
-/// without a backend. Each method below documents the exact Node.js
-/// endpoint it will call once wired up — only the body of each
-/// method needs to change; callers (the screens) never will.
+/// Talks to backend/routes/authRoutes.js. Each method throws
+/// [ApiException] on failure — callers (AuthProvider) catch it and
+/// surface `.message` to the UI.
 class AuthService {
-  // TODO: inject ApiClient here once the backend is connected:
-  // final ApiClient _apiClient;
-  // AuthService(this._apiClient);
+  final ApiClient _client = ApiClient();
 
-  Future<AuthResult> register({
+  /// POST /api/auth/register  { fullName, email, password }
+  Future<AuthResultModel> register({
     required String fullName,
     required String email,
     required String password,
   }) async {
-    // Real call will be:
-    // final res = await _apiClient.post(ApiEndpoints.register, body: {
-    //   'fullName': fullName, 'email': email, 'password': password,
-    // });
-    await Future.delayed(const Duration(seconds: 1));
-    return const AuthResult(
-      success: true,
-      message: 'Account created successfully',
-    );
+    final res = await _client.post(ApiEndpoints.register, body: {
+      'fullName': fullName,
+      'email': email,
+      'password': password,
+    });
+    return AuthResultModel.fromJson(res.data as Map<String, dynamic>);
   }
 
-  Future<AuthResult> forgotPassword({required String email}) async {
-    // Real call will be:
-    // final res = await _apiClient.post(ApiEndpoints.forgotPassword, body: {'email': email});
-    await Future.delayed(const Duration(seconds: 1));
-    return const AuthResult(
-      success: true,
-      message: 'Verification code sent to your email',
-    );
+  /// POST /api/auth/login  { email, password }
+  Future<AuthResultModel> login({
+    required String email,
+    required String password,
+  }) async {
+    final res = await _client.post(ApiEndpoints.login, body: {
+      'email': email,
+      'password': password,
+    });
+    return AuthResultModel.fromJson(res.data as Map<String, dynamic>);
   }
 
-  Future<AuthResult> verifyResetCode({
+  /// POST /api/auth/forgot-password  { email }
+  /// Backend always responds success:true (even for unknown emails) to
+  /// avoid leaking which addresses are registered — an OTP is emailed
+  /// only if the account exists.
+  Future<String> forgotPassword({required String email}) async {
+    final res = await _client.post(ApiEndpoints.forgotPassword, body: {
+      'email': email,
+    });
+    return res.message;
+  }
+
+  /// POST /api/auth/verify-reset-code  { email, code }
+  /// Returns a short-lived resetToken to pass into resetPassword().
+  Future<String> verifyResetCode({
     required String email,
     required String code,
   }) async {
-    // Real call will be:
-    // final res = await _apiClient.post(ApiEndpoints.verifyResetCode, body: {'email': email, 'code': code});
-    await Future.delayed(const Duration(seconds: 1));
-    if (code.length != 6) {
-      return const AuthResult(success: false, message: 'Invalid verification code');
+    final res = await _client.post(ApiEndpoints.verifyResetCode, body: {
+      'email': email,
+      'code': code,
+    });
+    final resetToken = res.raw['resetToken'];
+    if (resetToken == null || resetToken.toString().isEmpty) {
+      throw ApiException('Server did not return a reset token');
     }
-    return const AuthResult(
-      success: true,
-      message: 'Code verified',
-      resetToken: 'mock-reset-token',
-    );
+    return resetToken.toString();
   }
 
-  Future<AuthResult> resetPassword({
+  /// POST /api/auth/reset-password  { email, resetToken, newPassword }
+  Future<String> resetPassword({
     required String email,
     required String resetToken,
     required String newPassword,
   }) async {
-    // Real call will be:
-    // final res = await _apiClient.post(ApiEndpoints.resetPassword, body: {'email': email, 'resetToken': resetToken, 'newPassword': newPassword});
-    await Future.delayed(const Duration(seconds: 1));
-    return const AuthResult(success: true, message: 'Password reset successfully');
+    final res = await _client.post(ApiEndpoints.resetPassword, body: {
+      'email': email,
+      'resetToken': resetToken,
+      'newPassword': newPassword,
+    });
+    return res.message;
   }
 
-  /// Mock social login. Swap for real Google Sign-In later —
-  /// e.g. via `google_sign_in` package, then POST the resulting
-  /// ID token to your backend for verification.
-  Future<AuthResult> loginWithGoogle() async {
-    // Real flow will be:
-    // final googleUser = await GoogleSignIn().signIn();
-    // final res = await _apiClient.post(ApiEndpoints.googleLogin, body: {'idToken': ...});
-    await Future.delayed(const Duration(milliseconds: 900));
-    return const AuthResult(
-      success: true,
-      message: 'Logged in with Google successfully',
-    );
+  /// POST /api/auth/google  { idToken }  (requires google_sign_in package
+  /// + GOOGLE_CLIENT_ID configured on the backend)
+  Future<AuthResultModel> googleLogin({required String idToken}) async {
+    final res = await _client.post(ApiEndpoints.googleLogin, body: {
+      'idToken': idToken,
+    });
+    return AuthResultModel.fromJson(res.data as Map<String, dynamic>);
   }
 
-  /// Mock social login. Swap for real Microsoft Sign-In later —
-  /// e.g. via `msal_auth` / `aad_oauth`, then POST the resulting
-  /// token to your backend for verification.
-  Future<AuthResult> loginWithMicrosoft() async {
-    // Real flow will be:
-    // final msalResult = await msalAuth.acquireToken(...);
-    // final res = await _apiClient.post(ApiEndpoints.microsoftLogin, body: {'accessToken': ...});
-    await Future.delayed(const Duration(milliseconds: 900));
-    return const AuthResult(
-      success: true,
-      message: 'Logged in with Microsoft successfully',
-    );
+  /// POST /api/auth/microsoft  { accessToken }  (requires an MSAL package
+  /// on the client)
+  Future<AuthResultModel> microsoftLogin({required String accessToken}) async {
+    final res = await _client.post(ApiEndpoints.microsoftLogin, body: {
+      'accessToken': accessToken,
+    });
+    return AuthResultModel.fromJson(res.data as Map<String, dynamic>);
   }
 }

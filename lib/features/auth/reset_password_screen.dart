@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../app/routes.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_strings.dart';
-import '../../core/utils/validators.dart';
-import '../../core/widgets/custom_button.dart';
-import '../../core/widgets/custom_text_field.dart';
-import '../../services/auth_service.dart';
+import '../../providers/auth_provider.dart';
 
+/// Step 3 of password reset: sets the new password using the
+/// resetToken obtained after OTP verification
+/// (POST /api/auth/reset-password). Both [email] and [resetToken] are
+/// passed in from VerifyResetCodeScreen via
+/// AppRoutes.resetPassword's arguments.
 class ResetPasswordScreen extends StatefulWidget {
-  const ResetPasswordScreen({
-    super.key,
-    required this.email,
-    required this.resetToken,
-  });
+  const ResetPasswordScreen({super.key, required this.email, required this.resetToken});
 
   final String email;
   final String resetToken;
@@ -25,11 +22,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
-  final _authService = AuthService();
-
-  bool _obscurePassword = true;
-  bool _obscureConfirm = true;
-  bool _isLoading = false;
+  bool _obscure = true;
 
   @override
   void dispose() {
@@ -38,120 +31,70 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     super.dispose();
   }
 
-  Future<void> _handleReset() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    final result = await _authService.resetPassword(
+    final auth = context.read<AuthProvider>();
+    final success = await auth.resetPassword(
       email: widget.email,
       resetToken: widget.resetToken,
       newPassword: _passwordController.text,
     );
-
     if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (result.success) {
-      // Drop ForgotPassword / VerifyCode / ResetPassword from the
-      // stack, keeping Login underneath, then show the success screen.
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoutes.resetSuccess,
-        ModalRoute.withName(AppRoutes.login),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.message)),
-      );
+    if (success) {
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil(AppRoutes.resetSuccess, (route) => false);
+    } else if (auth.errorMessage != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(auth.errorMessage!)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Reset Password')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+          padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: const Icon(Icons.lock_outline, color: Colors.white, size: 30),
-                  ),
-                ),
+                const Text('Choose a new password for your account.'),
                 const SizedBox(height: 24),
-                const Text(
-                  AppStrings.newPasswordTitle,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  AppStrings.newPasswordSubtitle,
-                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 28),
-                CustomTextField(
+                TextFormField(
                   controller: _passwordController,
-                  hintText: AppStrings.newPasswordHint,
-                  prefixIcon: Icons.lock_outline,
-                  obscureText: _obscurePassword,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      color: AppColors.textSecondary,
-                      size: 20,
+                  obscureText: _obscure,
+                  decoration: InputDecoration(
+                    labelText: 'New Password',
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () => setState(() => _obscure = !_obscure),
                     ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
-                  validator: Validators.password,
+                  validator: (v) => (v == null || v.length < 6)
+                      ? 'Password must be at least 6 characters'
+                      : null,
                 ),
                 const SizedBox(height: 16),
-                CustomTextField(
+                TextFormField(
                   controller: _confirmController,
-                  hintText: AppStrings.confirmPasswordHint,
-                  prefixIcon: Icons.lock_outline,
-                  obscureText: _obscureConfirm,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      color: AppColors.textSecondary,
-                      size: 20,
-                    ),
-                    onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                  ),
-                  validator: (value) => Validators.confirmPassword(value, _passwordController.text),
+                  obscureText: _obscure,
+                  decoration: const InputDecoration(labelText: 'Confirm New Password'),
+                  validator: (v) =>
+                      v != _passwordController.text ? 'Passwords do not match' : null,
                 ),
                 const SizedBox(height: 24),
-                CustomButton(
-                  label: AppStrings.resetPasswordBtn,
-                  isLoading: _isLoading,
-                  onPressed: _handleReset,
+                ElevatedButton(
+                  onPressed: auth.isLoading ? null : _submit,
+                  child: auth.isLoading
+                      ? const SizedBox(
+                          height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Reset Password'),
                 ),
-                const SizedBox(height: 24),
               ],
             ),
           ),

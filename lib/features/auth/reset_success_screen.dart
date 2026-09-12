@@ -1,88 +1,40 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../app/routes.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_strings.dart';
-import '../../core/widgets/custom_button.dart';
 
-/// Generic success screen used after Reset Password and Create Account.
-/// [title] / [subtitle] default to the Reset Password copy so the
-/// existing Forgot Password flow keeps working with no changes.
-class ResetSuccessScreen extends StatefulWidget {
-  const ResetSuccessScreen({
-    super.key,
-    this.title = AppStrings.resetSuccessTitle,
-    this.subtitle = AppStrings.resetSuccessSubtitle,
-  });
-
-  final String title;
-  final String subtitle;
-
-  @override
-  State<ResetSuccessScreen> createState() => _ResetSuccessScreenState();
-}
-
-class _ResetSuccessScreenState extends State<ResetSuccessScreen> {
-  Timer? _autoRedirectTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _autoRedirectTimer = Timer(const Duration(seconds: 2), _goToLogin);
-  }
-
-  @override
-  void dispose() {
-    _autoRedirectTimer?.cancel();
-    super.dispose();
-  }
-
-  void _goToLogin() {
-    if (!mounted) return;
-    Navigator.of(context).popUntil(ModalRoute.withName(AppRoutes.login));
-  }
+/// Shown after a successful /api/auth/reset-password call.
+class ResetSuccessScreen extends StatelessWidget {
+  const ResetSuccessScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: AppColors.success,
-                  borderRadius: BorderRadius.circular(18),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green, size: 80),
+                const SizedBox(height: 24),
+                Text('Password Reset!', style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 12),
+                const Text(
+                  'Your password has been changed successfully. '
+                  'You can now log in with your new password.',
+                  textAlign: TextAlign.center,
                 ),
-                child: const Icon(Icons.check, color: Colors.white, size: 30),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                widget.title,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context)
+                        .pushNamedAndRemoveUntil(AppRoutes.login, (route) => false),
+                    child: const Text('Back to Log In'),
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.subtitle,
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              CustomButton(
-                label: AppStrings.backToLoginBtn,
-                onPressed: _goToLogin,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

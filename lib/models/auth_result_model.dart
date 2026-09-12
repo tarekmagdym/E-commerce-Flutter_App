@@ -1,14 +1,17 @@
-/// Generic result returned by auth-related service calls.
-/// [resetToken] is populated by verifyResetCode and consumed by
-/// resetPassword — mirrors a typical short-lived reset-token flow.
-class AuthResult {
-  const AuthResult({
-    required this.success,
-    required this.message,
-    this.resetToken,
-  });
+import 'user_model.dart';
 
-  final bool success;
-  final String message;
-  final String? resetToken;
+/// Mirrors the `data` object returned by /auth/register, /auth/login,
+/// /auth/google and /auth/microsoft: { token, user }.
+class AuthResultModel {
+  final String token;
+  final UserModel user;
+
+  AuthResultModel({required this.token, required this.user});
+
+  factory AuthResultModel.fromJson(Map<String, dynamic> json) {
+    return AuthResultModel(
+      token: (json['token'] ?? '').toString(),
+      user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
+    );
+  }
 }
