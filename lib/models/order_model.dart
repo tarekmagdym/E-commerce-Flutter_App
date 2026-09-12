@@ -1,3 +1,5 @@
+import 'cart_model.dart';
+
 enum OrderStatus { processing, shipped, delivered, cancelled }
 
 class OrderModel {
@@ -7,6 +9,9 @@ class OrderModel {
     required this.status,
     required this.total,
     required this.itemCount,
+    this.items = const [],
+    this.shippingAddress,
+    this.paymentLabel,
   });
 
   final String id;
@@ -14,6 +19,12 @@ class OrderModel {
   final OrderStatus status;
   final double total;
   final int itemCount;
+
+  /// Populated for orders placed through Checkout. Empty for the
+  /// seeded mock order history, which predates per-item tracking.
+  final List<CartItemModel> items;
+  final String? shippingAddress;
+  final String? paymentLabel;
 
   String get formattedTotal => '\$${total.toStringAsFixed(0)}';
 

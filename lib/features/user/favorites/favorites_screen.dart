@@ -7,6 +7,7 @@ import '../../../core/widgets/product_card.dart';
 import '../../../models/product_model.dart';
 import '../../../services/product_service.dart';
 import '../../../services/cart_service.dart';
+import '../products/product_details_screen.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -54,6 +55,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   void _removeFromWishlist(ProductModel product) {
     final removedIndex = _wishlist.indexOf(product);
     setState(() => _wishlist.remove(product));
+    _service.toggleWishlist(product.id);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -63,6 +65,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           onPressed: () {
             if (!mounted) return;
             setState(() => _wishlist.insert(removedIndex, product));
+            _service.toggleWishlist(product.id);
           },
         ),
       ),
@@ -112,7 +115,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             children: [
               ProductCard(
                 product: product,
-                onTap: () => _showComingSoon(product.name),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: product)),
+                ),
                 onAddToCart: () async {
                   await _cartService.addItem(product);
                   if (!mounted) return;

@@ -81,6 +81,15 @@ class AppStrings {
       'Something went wrong. Please try again.';
   static const String tryAgain = 'Try Again';
   static const String productsCountSuffix = 'items';
+  static const String allProductsTitle = 'All Products';
+
+  // Product Details Screen
+  static const String reviewsSuffix = 'reviews';
+  static const String descriptionLabel = 'Description';
+  static const String quantityLabel = 'Quantity';
+  static const String addToCart = 'Add to Cart';
+  static const String noDescriptionAvailable =
+      'No description available for this product yet.';
 
   // Cart Screen
   static const String cartTitle = 'Shopping Cart';
@@ -108,7 +117,13 @@ class AppStrings {
   static const String viewOrders = 'View Orders';
   static const String continueShopping = 'Continue Shopping';
 
-  // Profile Screen
+  // Addresses Screen
+  static const String addressesTitle = 'Addresses';
+  static const String addAddress = 'Add Address';
+  static const String noAddressesTitle = 'No addresses yet';
+  static const String noAddressesSubtitle = 'Add an address to check out faster next time';
+  static const String removeAddress = 'Remove address';  static const String orderStatusLabel = 'Order Status';
+  static const String itemsLabel = 'Items';
 
   // Profile Screen
   static const String profileTitle = 'Profile';

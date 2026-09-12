@@ -1,3 +1,4 @@
+import '../models/cart_model.dart';
 import '../models/order_model.dart';
 
 /// Mock order history, plus mock order placement for Checkout.
@@ -49,6 +50,9 @@ class OrderService {
   Future<OrderModel> placeOrder({
     required double total,
     required int itemCount,
+    List<CartItemModel> items = const [],
+    String? shippingAddress,
+    String? paymentLabel,
   }) async {
     await Future.delayed(const Duration(milliseconds: 700));
     final order = OrderModel(
@@ -57,8 +61,12 @@ class OrderService {
       status: OrderStatus.processing,
       total: total,
       itemCount: itemCount,
+      items: items,
+      shippingAddress: shippingAddress,
+      paymentLabel: paymentLabel,
     );
     _orders.insert(0, order);
     return order;
   }
+
 }

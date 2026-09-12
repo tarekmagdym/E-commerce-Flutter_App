@@ -16,4 +16,15 @@ class AddressModel {
   final bool isDefault;
 
   String get shortLocation => '$city, $country';
+
+  AddressModel copyWith({bool? isDefault}) {
+    return AddressModel(
+      id: id,
+      fullName: fullName,
+      addressLine: addressLine,
+      city: city,
+      country: country,
+      isDefault: isDefault ?? this.isDefault,
+    );
+  }
 }

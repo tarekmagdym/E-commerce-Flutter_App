@@ -12,6 +12,7 @@ import '../../../app/routes.dart';
 import '../home/widgets/category_section.dart';
 import 'categories_controller.dart';
 import '../../../services/cart_service.dart';
+import '../products/product_details_screen.dart';
 
 /// Browse the full catalog, filtered by category chip and/or search text.
 ///
@@ -190,7 +191,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 final product = products[index];
                 return ProductCard(
                   product: product,
-                  onTap: () => _showComingSoon(product.name),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: product)),
+                  ),
                   onAddToCart: () async {
                     await _cartService.addItem(product);
                     if (!mounted) return;

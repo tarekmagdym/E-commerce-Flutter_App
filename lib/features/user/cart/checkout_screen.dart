@@ -7,9 +7,12 @@ import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../../models/cart_model.dart';
 import '../../../models/order_model.dart';
+import '../../../models/address_model.dart';
 import '../../../models/payment_method_model.dart';
 import '../orders/orders_screen.dart';
+import '../profile/addresses_screen.dart';
 import 'checkout_controller.dart';
+
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -23,6 +26,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   List<CartItemModel> _items = [];
   List<PaymentMethodModel> _cards = [];
+  AddressModel? _selectedAddress;
   String _selectedPaymentId = 'cod';
 
   bool _isLoading = true;
@@ -45,12 +49,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final results = await Future.wait([
         _controller.loadCartItems(),
         _controller.loadPaymentMethods(),
+        _controller.loadShippingAddress(),
       ]);
 
       if (!mounted) return;
       setState(() {
         _items = results[0] as List<CartItemModel>;
         _cards = results[1] as List<PaymentMethodModel>;
+        _selectedAddress = results[2] as AddressModel;
         _isLoading = false;
       });
     } catch (_) {
@@ -62,10 +68,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
+  String get _selectedPaymentLabel {
+    if (_selectedPaymentId == 'cod') return AppStrings.cashOnDelivery;
+    final card = _cards.firstWhere((c) => c.id == _selectedPaymentId);
+    return '${card.brandLabel} •••• ${card.last4}';
+  }
+
+  Future<void> _handleChangeAddress() async {
+    final selected = await Navigator.of(context).push<AddressModel>(
+      MaterialPageRoute(builder: (_) => const AddressesScreen(selectMode: true)),
+    );
+    if (selected != null && mounted) {
+      setState(() => _selectedAddress = selected);
+    }
+  }
+
   Future<void> _handlePlaceOrder() async {
     setState(() => _isPlacingOrder = true);
 
-    final order = await _controller.placeOrder();
+    final address = _selectedAddress!;
+    final order = await _controller.placeOrder(
+      paymentLabel: _selectedPaymentLabel,
+      shippingAddress: '${address.addressLine}, ${address.shortLocation}',
+    );
 
     if (!mounted) return;
     setState(() => _isPlacingOrder = false);
@@ -189,7 +214,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildAddressCard() {
-    final address = CheckoutController.defaultAddress;
+    final address = _selectedAddress!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -231,9 +256,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
           TextButton(
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Change address — coming soon')),
-            ),
+            onPressed: _handleChangeAddress,
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
               minimumSize: const Size(0, 0),

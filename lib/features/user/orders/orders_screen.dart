@@ -5,6 +5,7 @@ import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../../models/order_model.dart';
 import '../../../services/order_service.dart';
+import 'order_details_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -48,12 +49,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature — coming soon')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,7 +79,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
           final order = _orders[index];
           return _OrderTile(
             order: order,
-            onTap: () => _showComingSoon('${AppStrings.orderIdPrefix} ${order.id}'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => OrderDetailsScreen(order: order)),
+            ),
           );
         },
       ),

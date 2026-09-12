@@ -13,6 +13,7 @@ import 'settings_screen.dart';
 import '../favorites/favorites_screen.dart';
 import '../orders/orders_screen.dart';
 import '../../../services/cart_service.dart';
+import 'addresses_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -188,6 +189,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 subtitle: '$_ordersCount total',
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const OrdersScreen()),
+                ),
+              ),
+              _MenuTile(
+                icon: Icons.location_on_outlined,
+                iconBackground: AppColors.warning,
+                title: AppStrings.addressesTitle,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AddressesScreen()),
                 ),
               ),
               _MenuTile(

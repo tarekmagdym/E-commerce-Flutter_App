@@ -11,6 +11,8 @@ import 'widgets/category_section.dart';
 import 'widgets/featured_products.dart';
 import 'widgets/home_banner.dart';
 import '../../../services/cart_service.dart';
+import '../products/products_screen.dart';
+import '../products/product_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -155,11 +157,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
               FeaturedProducts(
                 products: _visibleProducts,
-                onSeeAll: () => Navigator.of(context).pushNamed(
-                  AppRoutes.categories,
-                  arguments: {'categoryId': _selectedCategoryId},
+                onSeeAll: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ProductsScreen(categoryId: _selectedCategoryId),
+                  ),
                 ),
-                onProductTap: (product) => _showComingSoon(product.name),
+                onProductTap: (product) => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: product)),
+                ),
                 onAddToCart: (product) async {
                   await _cartService.addItem(product);
                   if (!mounted) return;

@@ -148,12 +148,28 @@ class ProductService {
     return _catalog.where((p) => p.categoryId == categoryId).toList();
   }
 
+  /// In-memory wishlist state (mirrors CartService's static-list
+  /// pattern) so a toggle from Product Details is reflected on the
+  /// Wishlist screen and vice versa, within the same app session.
+  static final Set<String> _wishlistIds = {'p1', 'p3', 'p9', 'p12'};
+
   /// Mock saved-for-later items for the Wishlist screen.
   Future<List<ProductModel>> getWishlist() async {
     // Real call will be: GET /users/me/wishlist
     await Future.delayed(const Duration(milliseconds: 400));
-    const wishlistIds = {'p1', 'p3', 'p9', 'p12'};
-    return _catalog.where((p) => wishlistIds.contains(p.id)).toList();
+    return _catalog.where((p) => _wishlistIds.contains(p.id)).toList();
+  }
+
+  bool isInWishlist(String productId) => _wishlistIds.contains(productId);
+
+  /// Real call will be: POST/DELETE /users/me/wishlist/:productId
+  Future<void> toggleWishlist(String productId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (_wishlistIds.contains(productId)) {
+      _wishlistIds.remove(productId);
+    } else {
+      _wishlistIds.add(productId);
+    }
   }
 
   Future<List<ProductModel>> getBestSellers() async {
