@@ -53,4 +53,10 @@ class ProductModel {
       stock: (json['stock'] as num?)?.toInt() ?? 0,
     );
   }
+
+  bool? get isBestSeller => null;
+
+  String? get sku => null;
+
+  get imagePublicIds => null;
 }
