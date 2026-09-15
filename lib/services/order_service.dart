@@ -69,4 +69,22 @@ class OrderService {
     return order;
   }
 
+  /// Real call will be: PATCH /orders/:id/status
+  Future<void> updateStatus(String id, OrderStatus status) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final index = _orders.indexWhere((o) => o.id == id);
+    if (index == -1) return;
+    final existing = _orders[index];
+    _orders[index] = OrderModel(
+      id: existing.id,
+      date: existing.date,
+      status: status,
+      total: existing.total,
+      itemCount: existing.itemCount,
+      items: existing.items,
+      shippingAddress: existing.shippingAddress,
+      paymentLabel: existing.paymentLabel,
+      customerName: existing.customerName,
+    );
+  }
 }

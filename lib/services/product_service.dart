@@ -7,7 +7,7 @@ class ProductService {
   /// Full mock catalog used by [getAllProducts] and [getProductsByCategory].
   /// Kept separate from [getBestSellers] so that screen's data stays
   /// exactly as it was.
-  static const List<ProductModel> _catalog = [
+  static final List<ProductModel> _catalog = [
     ProductModel(
       id: 'p1',
       name: 'Nike Air Max',
@@ -136,7 +136,7 @@ class ProductService {
   Future<List<ProductModel>> getAllProducts() async {
     // Real call will be: GET /products
     await Future.delayed(const Duration(milliseconds: 500));
-    return _catalog;
+    return List.unmodifiable(_catalog);
   }
 
   /// Products for a single category. Pass `null` or `'all'` for the
@@ -144,8 +144,66 @@ class ProductService {
   Future<List<ProductModel>> getProductsByCategory(String? categoryId) async {
     // Real call will be: GET /products?category=$categoryId
     await Future.delayed(const Duration(milliseconds: 500));
-    if (categoryId == null || categoryId == 'all') return _catalog;
+    if (categoryId == null || categoryId == 'all') return List.unmodifiable(_catalog);
     return _catalog.where((p) => p.categoryId == categoryId).toList();
+  }
+
+  /// Real call will be: POST /products
+  Future<ProductModel> addProduct({
+    required String name,
+    required double price,
+    required String categoryId,
+    required IconData icon,
+    int stock = 0,
+    String description = '',
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    final product = ProductModel(
+      id: 'prod_${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      price: price,
+      categoryId: categoryId,
+      icon: icon,
+      iconBackground: const Color(0xFFEFF1F5),
+      stock: stock,
+      description: description,
+    );
+    _catalog.add(product);
+    return product;
+  }
+
+  /// Real call will be: PUT /products/:id
+  Future<void> updateProduct({
+    required String id,
+    required String name,
+    required double price,
+    required String categoryId,
+    required IconData icon,
+    int stock = 0,
+    String description = '',
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    final index = _catalog.indexWhere((p) => p.id == id);
+    if (index == -1) return;
+    final existing = _catalog[index];
+    _catalog[index] = ProductModel(
+      id: id,
+      name: name,
+      price: price,
+      categoryId: categoryId,
+      icon: icon,
+      iconBackground: existing.iconBackground,
+      rating: existing.rating,
+      reviewCount: existing.reviewCount,
+      stock: stock,
+      description: description,
+    );
+  }
+
+  /// Real call will be: DELETE /products/:id
+  Future<void> deleteProduct(String id) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    _catalog.removeWhere((p) => p.id == id);
   }
 
   /// In-memory wishlist state (mirrors CartService's static-list

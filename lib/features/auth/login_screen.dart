@@ -5,9 +5,8 @@ import '../../core/constants/app_strings.dart';
 import '../../core/widgets/brand_icons.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/custom_text_field.dart';
-import '../../core/widgets/social_login_button.dart';
 import '../../services/auth_service.dart';
-import 'reset_success_screen.dart';
+import '../../core/utils/validators.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,7 +25,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _rememberMe = true;
   bool _isLoading = false;
   bool _isGoogleLoading = false;
-  bool _isMicrosoftLoading = false;
 
   @override
   void dispose() {
@@ -35,21 +33,30 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    // TODO: replace with real AuthService.login() call once backend exists.
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoutes.home,
-            (route) => false,
+    final result = await _authService.login(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (result.success) {
+      final destination = result.role == 'admin' ? AppRoutes.adminDashboard : AppRoutes.home;
+      Navigator.pushNamedAndRemoveUntil(context, destination, (route) => false);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message),
+          backgroundColor: AppColors.danger,
+        ),
       );
-    });
+    }
   }
 
   Future<void> _handleGoogleLogin() async {
@@ -61,40 +68,8 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isGoogleLoading = false);
 
     if (result.success) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const ResetSuccessScreen(
-            title: AppStrings.googleLoginSuccessTitle,
-            subtitle: AppStrings.socialLoginSuccessSubtitle,
-          ),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.message)),
-      );
-    }
-  }
-
-  Future<void> _handleMicrosoftLogin() async {
-    setState(() => _isMicrosoftLoading = true);
-
-    final result = await _authService.loginWithMicrosoft();
-
-    if (!mounted) return;
-    setState(() => _isMicrosoftLoading = false);
-
-    if (result.success) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const ResetSuccessScreen(
-            title: AppStrings.microsoftLoginSuccessTitle,
-            subtitle: AppStrings.socialLoginSuccessSubtitle,
-          ),
-        ),
-      );
+      final destination = result.role == 'admin' ? AppRoutes.adminDashboard : AppRoutes.home;
+      Navigator.pushNamedAndRemoveUntil(context, destination, (route) => false);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result.message)),
@@ -168,15 +143,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 CustomTextField(
                   controller: _emailController,
-                  hintText: AppStrings.emailOrPhoneHint,
+                  hintText: AppStrings.emailHint,
                   prefixIcon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email or phone';
-                    }
-                    return null;
-                  },
+                  validator: Validators.email,
                 ),
 
                 const SizedBox(height: 16),
@@ -335,26 +305,44 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 16),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: SocialLoginButton(
-                        icon: const GoogleIcon(size: 18),
-                        label: AppStrings.google,
-                        isLoading: _isGoogleLoading,
-                        onPressed: _handleGoogleLogin,
+                SizedBox(
+                  height: 52,
+                  child: OutlinedButton(
+                    onPressed: _isGoogleLoading ? null : _handleGoogleLogin,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                        color: AppColors.borderStrong,
+                        width: 1.6,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: SocialLoginButton(
-                        icon: const MicrosoftIcon(size: 18),
-                        label: AppStrings.microsoft,
-                        isLoading: _isMicrosoftLoading,
-                        onPressed: _handleMicrosoftLogin,
+                    child: _isGoogleLoading
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                       ),
+                    )
+                        : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GoogleIcon(size: 20),
+                        SizedBox(width: 10),
+                        Text(
+                          'Continue with Google',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
 
                 const SizedBox(height: 24),

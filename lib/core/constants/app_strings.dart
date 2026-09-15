@@ -12,6 +12,7 @@ class AppStrings {
   static const String welcomeBack = 'Welcome back!';
   static const String loginSubtitle = 'Login to your account';
   static const String emailOrPhoneHint = 'Email or Phone';
+  static const String emailHint = 'Email';
   static const String passwordHint = 'Password';
   static const String rememberMe = 'Remember me';
   static const String forgotPassword = 'Forgot password?';
@@ -122,7 +123,65 @@ class AppStrings {
   static const String addAddress = 'Add Address';
   static const String noAddressesTitle = 'No addresses yet';
   static const String noAddressesSubtitle = 'Add an address to check out faster next time';
-  static const String removeAddress = 'Remove address';  static const String orderStatusLabel = 'Order Status';
+  static const String removeAddress = 'Remove address';
+
+  // Admin Dashboard
+  static const String adminDashboardTitle = 'Dashboard';
+  static const String adminProfileTitle = 'Admin Profile';
+  static const String adminOrdersTitle = 'Orders';
+  static const String totalProductsLabel = 'Total Products';
+  static const String totalOrdersLabel = 'Total Orders';
+  static const String totalUsersLabel = 'Total Users';
+  static const String totalRevenueLabel = 'Total Revenue';
+  static const String salesOverviewTitle = 'Sales Overview';
+  static const String last7DaysLabel = 'Last 7 days';
+  static const String recentOrdersTitle = 'Recent Orders';
+  static const String viewAllLabel = 'View All';
+
+  // Admin Categories
+  static const String addCategoryTitle = 'Add Category';
+  static const String editCategoryTitle = 'Edit Category';
+  static const String categoryNameHint = 'Category name';
+  static const String chooseIconLabel = 'Choose an icon';
+  static const String noCategoriesTitle = 'No categories yet';
+  static const String noCategoriesSubtitle = 'Add a category to start organizing products';
+  static const String deleteCategoryTitle = 'Delete category?';
+  static const String deleteCategoryMessagePrefix = 'This will remove';
+  static const String editLabel = 'Edit';
+  static const String deleteLabel = 'Delete';
+
+  // Admin Products
+  static const String productsTitle = 'Products';
+  static const String addProductTitle = 'Add Product';
+  static const String editProductTitle = 'Edit Product';
+  static const String productNameHint = 'Product name';
+  static const String priceHint = 'Price';
+  static const String stockHint = 'Stock quantity';
+  static const String descriptionHint = 'Product description';
+  static const String categoryLabel = 'Category';
+  static const String inStockLabel = 'in stock';
+  static const String outOfStockLabel = 'Out of stock';
+  static const String deleteProductTitle = 'Delete product?';
+  static const String deleteProductMessagePrefix = 'This will remove';
+
+  // Admin Orders
+  static const String allFilterLabel = 'All';
+  static const String updateStatusLabel = 'Update Status';
+  static const String statusUpdatedMessage = 'Order status updated';
+
+  // Admin Users
+  static const String usersTitle = 'Users';
+  static const String ordersLabel = 'Orders';
+  static const String blockedLabel = 'Blocked';
+  static const String blockUser = 'Block User';
+  static const String unblockUser = 'Unblock User';
+  static const String deleteUserTitle = 'Delete user?';
+  static const String deleteUserMessagePrefix = 'This will remove';
+  static const String noUsersTitle = 'No users yet';
+  static const String noUsersSubtitle = 'Registered customers will appear here';
+  // Admin Profile
+  static const String administratorLabel = 'Administrator';
+  static const String orderStatusLabel = 'Order Status';
   static const String itemsLabel = 'Items';
 
   // Profile Screen

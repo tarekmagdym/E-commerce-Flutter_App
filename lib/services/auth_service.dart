@@ -1,95 +1,153 @@
+import 'package:google_sign_in/google_sign_in.dart';
+
+import '../core/network/api_client.dart';
+import '../core/network/api_endpoints.dart';
+import '../core/storage/local_storage.dart';
 import '../models/auth_result_model.dart';
 
-/// Handles authentication-related operations.
-///
-/// Currently mocked with local delays so the UI is fully testable
-/// without a backend. Each method below documents the exact Node.js
-/// endpoint it will call once wired up — only the body of each
-/// method needs to change; callers (the screens) never will.
+/// Handles authentication-related operations. All methods are wired
+/// to the real backend, including Google social login, which
+/// authenticates natively then hands the resulting ID token to
+/// POST /api/auth/google.
 class AuthService {
-  // TODO: inject ApiClient here once the backend is connected:
-  // final ApiClient _apiClient;
-  // AuthService(this._apiClient);
+  AuthService({ApiClient? apiClient}) : _apiClient = apiClient ?? const ApiClient();
 
+  final ApiClient _apiClient;
+
+  // GoogleSignIn.instance is a singleton that must be initialize()'d
+  // exactly once — guard it here so it's safe to call loginWithGoogle()
+  // from a fresh AuthService() each time (as login_screen.dart does).
+  static bool _googleInitialized = false;
+
+  Future<void> _ensureGoogleInitialized() async {
+    if (_googleInitialized) return;
+    await GoogleSignIn.instance.initialize(
+      serverClientId: ApiEndpoints.googleServerClientId,
+    );
+    _googleInitialized = true;
+  }
+
+  /// Builds the same AuthResult shape login()/register() return, from
+  /// a raw backend response — shared by the two social login methods
+  /// below so LocalStorage and role handling stay in exactly one place.
+  Future<AuthResult> _handleBackendAuthResponse(ApiResponse response) async {
+    if (!response.success) {
+      return AuthResult(success: false, message: response.message);
+    }
+
+    final data = response.data as Map<String, dynamic>? ?? {};
+    final token = data['token'] as String?;
+    final user = data['user'] as Map<String, dynamic>?;
+    final role = user?['role'] as String? ?? 'user';
+
+    if (token == null) {
+      return const AuthResult(success: false, message: 'Unexpected response from server');
+    }
+
+    await LocalStorage.saveToken(token);
+    await LocalStorage.saveRole(role);
+
+    return AuthResult(success: true, message: response.message, token: token, role: role);
+  }
+
+  /// POST /api/auth/login — real backend call.
+  /// Body: { email, password }
+  /// Response: { success, message, data: { token, user: { role, ... } } }
+  Future<AuthResult> login({required String email, required String password}) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.login,
+      body: {'email': email, 'password': password},
+    );
+    return _handleBackendAuthResponse(response);
+  }
+
+  /// POST /api/auth/register
+  /// Body: { fullName, email, password }
+  /// Response: { success, message, data: { token, user: { role, ... } } }
   Future<AuthResult> register({
     required String fullName,
     required String email,
     required String password,
   }) async {
-    // Real call will be:
-    // final res = await _apiClient.post(ApiEndpoints.register, body: {
-    //   'fullName': fullName, 'email': email, 'password': password,
-    // });
-    await Future.delayed(const Duration(seconds: 1));
-    return const AuthResult(
-      success: true,
-      message: 'Account created successfully',
+    final response = await _apiClient.post(
+      ApiEndpoints.register,
+      body: {'fullName': fullName, 'email': email, 'password': password},
     );
+    return _handleBackendAuthResponse(response);
   }
 
+  /// POST /api/auth/forgot-password
+  /// Body: { email }
+  /// Response: { success, message } — always success:true even if the
+  /// email isn't registered, by backend design (avoids leaking which
+  /// emails have accounts).
   Future<AuthResult> forgotPassword({required String email}) async {
-    // Real call will be:
-    // final res = await _apiClient.post(ApiEndpoints.forgotPassword, body: {'email': email});
-    await Future.delayed(const Duration(seconds: 1));
-    return const AuthResult(
-      success: true,
-      message: 'Verification code sent to your email',
+    final response = await _apiClient.post(
+      ApiEndpoints.forgotPassword,
+      body: {'email': email},
     );
+    return AuthResult(success: response.success, message: response.message);
   }
 
+  /// POST /api/auth/verify-reset-code
+  /// Body: { email, code }
+  /// Response: { success, message, resetToken } — resetToken is a
+  /// top-level field here, not nested under `data` like login/register.
   Future<AuthResult> verifyResetCode({
     required String email,
     required String code,
   }) async {
-    // Real call will be:
-    // final res = await _apiClient.post(ApiEndpoints.verifyResetCode, body: {'email': email, 'code': code});
-    await Future.delayed(const Duration(seconds: 1));
-    if (code.length != 6) {
-      return const AuthResult(success: false, message: 'Invalid verification code');
-    }
-    return const AuthResult(
-      success: true,
-      message: 'Code verified',
-      resetToken: 'mock-reset-token',
+    final response = await _apiClient.post(
+      ApiEndpoints.verifyResetCode,
+      body: {'email': email, 'code': code},
     );
+
+    if (!response.success) {
+      return AuthResult(success: false, message: response.message);
+    }
+
+    final resetToken = response.raw['resetToken'] as String?;
+    return AuthResult(success: true, message: response.message, resetToken: resetToken);
   }
 
+  /// POST /api/auth/reset-password
+  /// Body: { email, resetToken, newPassword }
+  /// Response: { success, message }
   Future<AuthResult> resetPassword({
     required String email,
     required String resetToken,
     required String newPassword,
   }) async {
-    // Real call will be:
-    // final res = await _apiClient.post(ApiEndpoints.resetPassword, body: {'email': email, 'resetToken': resetToken, 'newPassword': newPassword});
-    await Future.delayed(const Duration(seconds: 1));
-    return const AuthResult(success: true, message: 'Password reset successfully');
+    final response = await _apiClient.post(
+      ApiEndpoints.resetPassword,
+      body: {'email': email, 'resetToken': resetToken, 'newPassword': newPassword},
+    );
+    return AuthResult(success: response.success, message: response.message);
   }
 
-  /// Mock social login. Swap for real Google Sign-In later —
-  /// e.g. via `google_sign_in` package, then POST the resulting
-  /// ID token to your backend for verification.
+  /// Real Google Sign-In. Gets an ID token natively, then POSTs it to
+  /// POST /api/auth/google, which verifies it against GOOGLE_CLIENT_ID.
   Future<AuthResult> loginWithGoogle() async {
-    // Real flow will be:
-    // final googleUser = await GoogleSignIn().signIn();
-    // final res = await _apiClient.post(ApiEndpoints.googleLogin, body: {'idToken': ...});
-    await Future.delayed(const Duration(milliseconds: 900));
-    return const AuthResult(
-      success: true,
-      message: 'Logged in with Google successfully',
-    );
+    try {
+      await _ensureGoogleInitialized();
+      final account = await GoogleSignIn.instance.authenticate();
+      final idToken = account.authentication.idToken;
+
+      if (idToken == null) {
+        return const AuthResult(success: false, message: 'Could not get a Google ID token');
+      }
+
+      final response = await _apiClient.post(
+        ApiEndpoints.googleLogin,
+        body: {'idToken': idToken},
+      );
+      return _handleBackendAuthResponse(response);
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        return const AuthResult(success: false, message: 'Google sign-in was cancelled');
+      }
+      return AuthResult(success: false, message: 'Google sign-in failed: ${e.description}');
+    }
   }
 
-  /// Mock social login. Swap for real Microsoft Sign-In later —
-  /// e.g. via `msal_auth` / `aad_oauth`, then POST the resulting
-  /// token to your backend for verification.
-  Future<AuthResult> loginWithMicrosoft() async {
-    // Real flow will be:
-    // final msalResult = await msalAuth.acquireToken(...);
-    // final res = await _apiClient.post(ApiEndpoints.microsoftLogin, body: {'accessToken': ...});
-    await Future.delayed(const Duration(milliseconds: 900));
-    return const AuthResult(
-      success: true,
-      message: 'Logged in with Microsoft successfully',
-    );
-  }
 }

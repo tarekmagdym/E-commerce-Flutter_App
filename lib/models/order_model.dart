@@ -12,6 +12,7 @@ class OrderModel {
     this.items = const [],
     this.shippingAddress,
     this.paymentLabel,
+    this.customerName = 'Ahmed Tarek',
   });
 
   final String id;
@@ -19,16 +20,21 @@ class OrderModel {
   final OrderStatus status;
   final double total;
   final int itemCount;
-
-  /// Populated for orders placed through Checkout. Empty for the
-  /// seeded mock order history, which predates per-item tracking.
   final List<CartItemModel> items;
   final String? shippingAddress;
   final String? paymentLabel;
 
+  /// Single mock customer for now — there's no multi-user backend
+  /// yet, so every order (seeded or placed through Checkout) belongs
+  /// to the same account.
+  final String customerName;
+
+
   String get formattedTotal => '\$${total.toStringAsFixed(0)}';
 
-  String get statusLabel {
+  String get statusLabel => labelForStatus(status);
+
+  static String labelForStatus(OrderStatus status) {
     switch (status) {
       case OrderStatus.processing:
         return 'Processing';

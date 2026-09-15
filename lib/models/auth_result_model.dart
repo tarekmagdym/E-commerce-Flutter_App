@@ -1,14 +1,18 @@
-/// Generic result returned by auth-related service calls.
-/// [resetToken] is populated by verifyResetCode and consumed by
-/// resetPassword — mirrors a typical short-lived reset-token flow.
 class AuthResult {
   const AuthResult({
     required this.success,
     required this.message,
     this.resetToken,
+    this.token,
+    this.role,
   });
 
   final bool success;
   final String message;
   final String? resetToken;
+
+  /// Populated by a real login — the JWT and the user's role
+  /// ('user' | 'admin'), used to decide where to navigate.
+  final String? token;
+  final String? role;
 }

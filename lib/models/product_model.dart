@@ -10,9 +10,11 @@ class ProductModel {
     required this.categoryId,
     required this.icon,
     required this.iconBackground,
+
     this.rating = 0,
     this.reviewCount = 0,
     this.description = '',
+    this.stock = 0,
   });
 
   final String id;
@@ -24,6 +26,7 @@ class ProductModel {
   final double rating;
   final int reviewCount;
   final String description;
+  final int stock;
 
   String get formattedPrice => '\$${price.toStringAsFixed(0)}';
 }

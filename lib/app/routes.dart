@@ -10,6 +10,12 @@ import '../features/user/home/home_screen.dart';
 import '../features/user/categories/categories_screen.dart';
 import '../features/user/profile/profile_screen.dart';
 import '../features/user/cart/cart_screen.dart';
+import '../features/admin/dashboard/admin_dashboard_screen.dart';
+import '../features/admin/categories/admin_categories_screen.dart';
+import '../features/admin/products/admin_products_screen.dart';
+import '../features/admin/orders/admin_orders_screen.dart';
+import '../features/admin/users/admin_users_screen.dart';
+import '../features/admin/profile/admin_profile_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -24,7 +30,14 @@ class AppRoutes {
   static const String home = '/home';
   static const String categories = '/categories';
   static const String profile = '/profile';
+  static const String adminDashboard = '/admin/dashboard';
+  static const String adminCategories = '/admin/categories';
+  static const String adminProducts = '/admin/products';
+  static const String adminOrders = '/admin/orders';
+  static const String adminUsers = '/admin/users';
+  static const String adminProfile = '/admin/profile';
   static const String cart = '/cart';
+
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -96,6 +109,42 @@ class AppRoutes {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const ProfileScreen(),
+        );
+
+      case adminDashboard:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const AdminDashboardScreen(),
+        );
+
+      case adminCategories:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const AdminCategoriesScreen(),
+        );
+
+      case adminProducts:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const AdminProductsScreen(),
+        );
+
+      case adminOrders:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const AdminOrdersScreen(),
+        );
+
+      case adminUsers:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const AdminUsersScreen(),
+        );
+
+      case adminProfile:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const AdminProfileScreen(),
         );
       case cart:
         return MaterialPageRoute(
