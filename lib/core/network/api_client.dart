@@ -32,13 +32,80 @@ class ApiClient {
       );
     }
   }
-
   Future<ApiResponse> get(String path, {bool requiresAuth = false}) async {
     try {
       final headers = await _buildHeaders(requiresAuth);
       final response = await http
           .get(Uri.parse('${ApiEndpoints.baseUrl}$path'), headers: headers)
           .timeout(const Duration(seconds: 15));
+      return _parse(response);
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        statusCode: 0,
+        message: 'Could not reach the server. Check your connection and try again.',
+      );
+    }
+  }
+
+  Future<ApiResponse> put(
+      String path, {
+        Map<String, dynamic>? body,
+        bool requiresAuth = false,
+      }) async {
+    try {
+      final headers = await _buildHeaders(requiresAuth);
+      final response = await http
+          .put(
+        Uri.parse('${ApiEndpoints.baseUrl}$path'),
+        headers: headers,
+        body: jsonEncode(body ?? {}),
+      )
+          .timeout(const Duration(seconds: 15));
+      return _parse(response);
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        statusCode: 0,
+        message: 'Could not reach the server. Check your connection and try again.',
+      );
+    }
+  }
+
+  Future<ApiResponse> delete(String path, {bool requiresAuth = false}) async {
+    try {
+      final headers = await _buildHeaders(requiresAuth);
+      final response = await http
+          .delete(Uri.parse('${ApiEndpoints.baseUrl}$path'), headers: headers)
+          .timeout(const Duration(seconds: 15));
+      return _parse(response);
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        statusCode: 0,
+        message: 'Could not reach the server. Check your connection and try again.',
+      );
+    }
+  }
+
+  /// For endpoints that use multer (Products create/update) — sent
+  /// with fields only, no files, since image picking isn't wired yet.
+  /// The backend already handles req.files being empty gracefully.
+  Future<ApiResponse> multipart(
+      String method,
+      String path, {
+        required Map<String, String> fields,
+        bool requiresAuth = false,
+      }) async {
+    try {
+      final request = http.MultipartRequest(method, Uri.parse('${ApiEndpoints.baseUrl}$path'));
+      request.fields.addAll(fields);
+      if (requiresAuth) {
+        final token = await LocalStorage.getToken();
+        if (token != null) request.headers['Authorization'] = 'Bearer $token';
+      }
+      final streamed = await request.send().timeout(const Duration(seconds: 20));
+      final response = await http.Response.fromStream(streamed);
       return _parse(response);
     } catch (e) {
       return ApiResponse(

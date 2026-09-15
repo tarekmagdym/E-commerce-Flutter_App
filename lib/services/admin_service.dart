@@ -1,51 +1,99 @@
+import '../core/network/api_client.dart';
+import '../core/network/api_endpoints.dart';
 import '../models/admin_stats_model.dart';
 import '../models/order_model.dart';
-import 'order_service.dart';
-import 'product_service.dart';
 
-/// New service (not part of the original scaffold), aggregating mock
-/// data for the Admin Dashboard. Real call will eventually be a
-/// single GET /admin/dashboard-stats rather than these separate
-/// product/order lookups.
+/// Talks to the /admin/* endpoints (adminRoutes.js): dashboard stats
+/// plus admin order management. All require an authenticated admin
+/// account — see the backend's protect + adminOnly middleware.
 class AdminService {
-  AdminService({
-    ProductService? productService,
-    OrderService? orderService,
-  })  : _productService = productService ?? ProductService(),
-        _orderService = orderService ?? OrderService();
+  AdminService({ApiClient? apiClient}) : _apiClient = apiClient ?? const ApiClient();
 
-  final ProductService _productService;
-  final OrderService _orderService;
-
-  /// No Users service/screen exists yet — this stays a fixed mock
-  /// count until Admin Users is built.
-  static const int _mockTotalUsers = 128;
+  final ApiClient _apiClient;
 
   Future<AdminStatsModel> getDashboardStats() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final products = await _productService.getAllProducts();
-    final orders = await _orderService.getOrders();
-    final revenue = orders.fold<double>(0, (sum, order) => sum + order.total);
-
-    return AdminStatsModel(
-      totalProducts: products.length,
-      totalOrders: orders.length,
-      totalUsers: _mockTotalUsers,
-      totalRevenue: revenue,
-    );
+    final response = await _apiClient.get(ApiEndpoints.adminDashboardStats, requiresAuth: true);
+    if (!response.success) {
+      throw Exception(response.message);
+    }
+    return AdminStatsModel.fromJson(response.data as Map<String, dynamic>? ?? {});
   }
 
-  /// Mock 7-day sales series for the dashboard chart.
-  /// Real call will be: GET /admin/sales?range=7d
-  Future<List<double>> getWeeklySales() async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    return const [1800, 2400, 2100, 3200, 2800, 3600, 3100];
+  /// [range] is 'week', 'month', or 'year' — matches the backend's
+  /// GET /admin/dashboard/sales-chart?range= query param.
+  Future<List<SalesPoint>> getSalesChart({String range = 'week'}) async {
+    final response = await _apiClient.get(
+      '${ApiEndpoints.adminDashboardSalesChart}?range=$range',
+      requiresAuth: true,
+    );
+    if (!response.success) {
+      throw Exception(response.message);
+    }
+    final list = response.data as List<dynamic>? ?? [];
+    return list.map((e) => SalesPoint.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// Most recent orders for the dashboard's activity feed.
   Future<List<OrderModel>> getRecentOrders({int limit = 5}) async {
-    final orders = await _orderService.getOrders();
-    return orders.take(limit).toList();
+    final response = await _apiClient.get(
+      '${ApiEndpoints.adminDashboardRecentOrders}?limit=$limit',
+      requiresAuth: true,
+    );
+    if (!response.success) {
+      throw Exception(response.message);
+    }
+    final list = response.data as List<dynamic>? ?? [];
+    return list.map((e) => OrderModel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// All orders (not just this dashboard's recent-5 feed), for the
+  /// Admin Orders screen. [status] filters server-side when given;
+  /// [limit] uses the backend's max page size since the current
+  /// screen shows everything at once rather than paginating.
+  Future<List<OrderModel>> adminListOrders({String? status, int limit = 100}) async {
+    final query = StringBuffer('?limit=$limit');
+    if (status != null) query.write('&status=$status');
+    final response = await _apiClient.get(
+      '${ApiEndpoints.adminOrders}$query',
+      requiresAuth: true,
+    );
+    if (!response.success) {
+      throw Exception(response.message);
+    }
+    final list = response.data as List<dynamic>? ?? [];
+    return list.map((e) => OrderModel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<OrderModel> adminGetOrder(String id) async {
+    final response = await _apiClient.get('${ApiEndpoints.adminOrders}/$id', requiresAuth: true);
+    if (!response.success) {
+      throw Exception(response.message);
+    }
+    return OrderModel.fromJson(response.data as Map<String, dynamic>? ?? {});
+  }
+
+  Future<OrderModel> adminUpdateOrderStatus(String id, OrderStatus status) async {
+    final response = await _apiClient.put(
+      '${ApiEndpoints.adminOrders}/$id/status',
+      body: {'status': _statusToString(status)},
+      requiresAuth: true,
+    );
+    if (!response.success) {
+      throw Exception(response.message);
+    }
+    return OrderModel.fromJson(response.data as Map<String, dynamic>? ?? {});
+  }
+
+  static String _statusToString(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.processing:
+        return 'processing';
+      case OrderStatus.shipped:
+        return 'shipped';
+      case OrderStatus.delivered:
+        return 'delivered';
+      case OrderStatus.cancelled:
+        return 'cancelled';
+    }
   }
 }

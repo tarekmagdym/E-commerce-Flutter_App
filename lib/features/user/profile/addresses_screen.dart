@@ -5,6 +5,7 @@ import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../../models/address_model.dart';
 import '../../../services/address_service.dart';
+import 'add_address_screen.dart';
 
 /// New screen (not part of the original scaffold), reached from
 /// Profile > Addresses. When [selectMode] is true (e.g. from
@@ -84,7 +85,12 @@ class _AddressesScreenState extends State<AddressesScreen> {
       ),
       body: SafeArea(child: _buildBody()),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showComingSoon(AppStrings.addAddress),
+        onPressed: () async {
+          final added = await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AddAddressScreen()),
+          );
+          if (added != null) _loadAddresses(); // or whatever your reload method is called
+        },
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: const Text(

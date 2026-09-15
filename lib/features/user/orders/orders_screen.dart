@@ -191,7 +191,7 @@ class _OrderTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${AppStrings.orderIdPrefix} ${order.id}',
+                    '${AppStrings.orderIdPrefix} ${order.orderNumber}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

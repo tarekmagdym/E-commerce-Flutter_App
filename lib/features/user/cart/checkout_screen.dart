@@ -11,6 +11,7 @@ import '../../../models/address_model.dart';
 import '../../../models/payment_method_model.dart';
 import '../orders/orders_screen.dart';
 import '../profile/addresses_screen.dart';
+import '../profile/add_address_screen.dart';
 import 'checkout_controller.dart';
 
 
@@ -49,16 +50,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final results = await Future.wait([
         _controller.loadCartItems(),
         _controller.loadPaymentMethods(),
-        _controller.loadShippingAddress(),
+        _controller.loadDefaultAddress(),
       ]);
 
       if (!mounted) return;
       setState(() {
         _items = results[0] as List<CartItemModel>;
         _cards = results[1] as List<PaymentMethodModel>;
-        _selectedAddress = results[2] as AddressModel;
+        _selectedAddress = results[2] as AddressModel?;
         _isLoading = false;
       });
+
+      // No saved address yet — send them straight to add one instead
+      // of showing a broken/empty address card.
+      if (_selectedAddress == null && mounted) {
+        _handleChangeAddress(promptAdd: true);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -74,28 +81,48 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return '${card.brandLabel} •••• ${card.last4}';
   }
 
-  Future<void> _handleChangeAddress() async {
-    final selected = await Navigator.of(context).push<AddressModel>(
+  Future<void> _handleChangeAddress({bool promptAdd = false}) async {
+    final hasAddresses = (await _controller.loadAddresses()).isNotEmpty;
+
+    final selected = hasAddresses && !promptAdd
+        ? await Navigator.of(context).push<AddressModel>(
       MaterialPageRoute(builder: (_) => const AddressesScreen(selectMode: true)),
+    )
+        : await Navigator.of(context).push<AddressModel>(
+      MaterialPageRoute(builder: (_) => const AddAddressScreen()),
     );
+
     if (selected != null && mounted) {
       setState(() => _selectedAddress = selected);
     }
   }
 
   Future<void> _handlePlaceOrder() async {
+    if (_selectedAddress == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add a shipping address first')),
+      );
+      return;
+    }
+
     setState(() => _isPlacingOrder = true);
 
-    final address = _selectedAddress!;
-    final order = await _controller.placeOrder(
-      paymentLabel: _selectedPaymentLabel,
-      shippingAddress: '${address.addressLine}, ${address.shortLocation}',
-    );
+    try {
+      final order = await _controller.placeOrder(
+        addressId: _selectedAddress!.id,
+        paymentMethodId: _selectedPaymentId == 'cod' ? null : _selectedPaymentId,
+      );
 
-    if (!mounted) return;
-    setState(() => _isPlacingOrder = false);
-
-    await _showOrderPlacedDialog(order);
+      if (!mounted) return;
+      setState(() => _isPlacingOrder = false);
+      await _showOrderPlacedDialog(order);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isPlacingOrder = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
   }
 
   Future<void> _showOrderPlacedDialog(OrderModel order) async {
@@ -306,7 +333,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         children: [
           _summaryRow(AppStrings.subtotalLabel, _controller.subtotal),
           const SizedBox(height: 10),
-          _summaryRow(AppStrings.shippingFeeLabel, CheckoutController.shippingFee),
+          _summaryRow(AppStrings.shippingFeeLabel, 0),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(color: AppColors.border, height: 1),

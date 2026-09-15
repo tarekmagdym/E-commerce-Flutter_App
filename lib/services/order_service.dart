@@ -1,90 +1,48 @@
-import '../models/cart_model.dart';
+import '../core/network/api_client.dart';
+import '../core/network/api_endpoints.dart';
 import '../models/order_model.dart';
 
-/// Mock order history, plus mock order placement for Checkout.
-/// The list is `static` so a newly placed order persists and shows
-/// up on the Orders screen within the same app session — there's no
-/// backend yet to persist it. Swap the bodies below for real API
-/// calls later — callers already treat everything here as async.
+/// User-facing order operations, all real now. GET /orders and
+/// GET /orders/:id were already wired; placeOrder() below now calls
+/// the real POST /orders, which reads the server-side Cart directly —
+/// no items are sent from the client. Admin order management lives
+/// in AdminService, not here.
 class OrderService {
-  static final List<OrderModel> _orders = [
-    OrderModel(
-      id: '#SE-1042',
-      date: DateTime(2026, 9, 2),
-      status: OrderStatus.delivered,
-      total: 2500,
-      itemCount: 1,
-    ),
-    OrderModel(
-      id: '#SE-1039',
-      date: DateTime(2026, 8, 21),
-      status: OrderStatus.shipped,
-      total: 1900,
-      itemCount: 2,
-    ),
-    OrderModel(
-      id: '#SE-1027',
-      date: DateTime(2026, 8, 5),
-      status: OrderStatus.processing,
-      total: 780,
-      itemCount: 1,
-    ),
-    OrderModel(
-      id: '#SE-0998',
-      date: DateTime(2026, 6, 30),
-      status: OrderStatus.cancelled,
-      total: 1400,
-      itemCount: 3,
-    ),
-  ];
+  OrderService({ApiClient? apiClient}) : _apiClient = apiClient ?? const ApiClient();
+
+  final ApiClient _apiClient;
 
   Future<List<OrderModel>> getOrders() async {
-    // Real call will be: GET /orders
-    await Future.delayed(const Duration(milliseconds: 500));
-    return List.unmodifiable(_orders);
+    final response = await _apiClient.get(ApiEndpoints.orders, requiresAuth: true);
+    if (!response.success) throw Exception(response.message);
+    final list = response.data as List<dynamic>? ?? [];
+    return list.map((e) => OrderModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  /// Places a new order from the Checkout total and inserts it at
-  /// the top of the order history.
-  /// Real call will be: POST /orders { items, total, ... }
+  Future<OrderModel> getOrderById(String id) async {
+    final response = await _apiClient.get('${ApiEndpoints.orders}/$id', requiresAuth: true);
+    if (!response.success) throw Exception(response.message);
+    return OrderModel.fromJson(response.data as Map<String, dynamic>? ?? {});
+  }
+
+  /// POST /orders — reads the user's server-side cart, creates the
+  /// order, decrements stock, and clears the cart, all server-side.
+  /// Body: { addressId, paymentMethodId? } — paymentMethodId omitted
+  /// for Cash on Delivery, which the backend already defaults
+  /// gracefully to { brand: 'other', last4: '' }.
   Future<OrderModel> placeOrder({
-    required double total,
-    required int itemCount,
-    List<CartItemModel> items = const [],
-    String? shippingAddress,
-    String? paymentLabel,
+    required String addressId,
+    String? paymentMethodId,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 700));
-    final order = OrderModel(
-      id: '#SE-${1043 + _orders.length}',
-      date: DateTime.now(),
-      status: OrderStatus.processing,
-      total: total,
-      itemCount: itemCount,
-      items: items,
-      shippingAddress: shippingAddress,
-      paymentLabel: paymentLabel,
+    final response = await _apiClient.post(
+      ApiEndpoints.orders,
+      body: {
+        'addressId': addressId,
+        if (paymentMethodId != null) 'paymentMethodId': paymentMethodId,
+      },
+      requiresAuth: true,
     );
-    _orders.insert(0, order);
-    return order;
-  }
-
-  /// Real call will be: PATCH /orders/:id/status
-  Future<void> updateStatus(String id, OrderStatus status) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    final index = _orders.indexWhere((o) => o.id == id);
-    if (index == -1) return;
-    final existing = _orders[index];
-    _orders[index] = OrderModel(
-      id: existing.id,
-      date: existing.date,
-      status: status,
-      total: existing.total,
-      itemCount: existing.itemCount,
-      items: existing.items,
-      shippingAddress: existing.shippingAddress,
-      paymentLabel: existing.paymentLabel,
-      customerName: existing.customerName,
-    );
+    if (!response.success) throw Exception(response.message);
+    return OrderModel.fromJson(response.data as Map<String, dynamic>? ?? {});
   }
 }

@@ -1,154 +1,53 @@
 import 'package:flutter/material.dart';
+import '../core/network/api_client.dart';
+import '../core/network/api_endpoints.dart';
 import '../models/product_model.dart';
 
-/// Mock product data. Swap the body of each method for a real API
-/// call later — callers already treat these as async.
 class ProductService {
-  /// Full mock catalog used by [getAllProducts] and [getProductsByCategory].
-  /// Kept separate from [getBestSellers] so that screen's data stays
-  /// exactly as it was.
-  static final List<ProductModel> _catalog = [
-    ProductModel(
-      id: 'p1',
-      name: 'Nike Air Max',
-      price: 2500,
-      categoryId: 'shoes',
-      icon: Icons.directions_walk_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 4.5,
-      reviewCount: 120,
-      description:
-      'The Nike Air Max combines style and comfort with its iconic design and advanced cushioning technology.',
-    ),
-    ProductModel(
-      id: 'p5',
-      name: 'Running Sneakers',
-      price: 1900,
-      categoryId: 'shoes',
-      icon: Icons.directions_run_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 4.1,
-      reviewCount: 44,
-    ),
-    ProductModel(
-      id: 'p6',
-      name: 'Leather Boots',
-      price: 3200,
-      categoryId: 'shoes',
-      icon: Icons.hiking_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 4.7,
-      reviewCount: 88,
-    ),
-    ProductModel(
-      id: 'p2',
-      name: 'Classic T-Shirt',
-      price: 700,
-      categoryId: 'clothes',
-      icon: Icons.checkroom_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 4.2,
-      reviewCount: 64,
-    ),
-    ProductModel(
-      id: 'p7',
-      name: 'Denim Jacket',
-      price: 1600,
-      categoryId: 'clothes',
-      icon: Icons.dry_cleaning_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 4.4,
-      reviewCount: 37,
-    ),
-    ProductModel(
-      id: 'p8',
-      name: 'Winter Hoodie',
-      price: 1200,
-      categoryId: 'clothes',
-      icon: Icons.checkroom_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 4.0,
-      reviewCount: 29,
-    ),
-    ProductModel(
-      id: 'p3',
-      name: 'Wireless Headphones',
-      price: 1800,
-      categoryId: 'electronics',
-      icon: Icons.headphones_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 4.6,
-      reviewCount: 98,
-    ),
-    ProductModel(
-      id: 'p9',
-      name: 'Bluetooth Speaker',
-      price: 1400,
-      categoryId: 'electronics',
-      icon: Icons.speaker_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 4.3,
-      reviewCount: 52,
-    ),
-    ProductModel(
-      id: 'p10',
-      name: 'Smartphone Stand',
-      price: 250,
-      categoryId: 'electronics',
-      icon: Icons.smartphone_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 3.9,
-      reviewCount: 18,
-    ),
-    ProductModel(
-      id: 'p4',
-      name: 'Smart Watch',
-      price: 2300,
-      categoryId: 'accessories',
-      icon: Icons.watch_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 4.3,
-      reviewCount: 51,
-    ),
-    ProductModel(
-      id: 'p11',
-      name: 'Leather Wallet',
-      price: 550,
-      categoryId: 'accessories',
-      icon: Icons.wallet_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 4.5,
-      reviewCount: 40,
-    ),
-    ProductModel(
-      id: 'p12',
-      name: 'Sunglasses',
-      price: 480,
-      categoryId: 'accessories',
-      icon: Icons.wb_sunny_rounded,
-      iconBackground: Color(0xFFEFF1F5),
-      rating: 4.1,
-      reviewCount: 33,
-    ),
-  ];
+  ProductService({ApiClient? apiClient}) : _apiClient = apiClient ?? const ApiClient();
 
-  /// Full catalog for the Categories screen.
+  final ApiClient _apiClient;
+
+  /// In-memory wishlist state. The backend has a real /api/wishlist,
+  /// but wiring it wasn't part of this pass (Cart & Checkout) — kept
+  /// local so Favorites/Product Details keep working meanwhile.
+  static final Set<String> _wishlistIds = {};
+
   Future<List<ProductModel>> getAllProducts() async {
-    // Real call will be: GET /products
-    await Future.delayed(const Duration(milliseconds: 500));
-    return List.unmodifiable(_catalog);
+    // limit raised since there's no pagination UI yet — revisit if
+    // the catalog grows past ~100 items.
+    final response = await _apiClient.get('${ApiEndpoints.products}?limit=100');
+    if (!response.success) throw Exception(response.message);
+    final list = response.data as List<dynamic>? ?? [];
+    return list.map((e) => ProductModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  /// Products for a single category. Pass `null` or `'all'` for the
-  /// full catalog.
   Future<List<ProductModel>> getProductsByCategory(String? categoryId) async {
-    // Real call will be: GET /products?category=$categoryId
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (categoryId == null || categoryId == 'all') return List.unmodifiable(_catalog);
-    return _catalog.where((p) => p.categoryId == categoryId).toList();
+    final query = (categoryId == null || categoryId == 'all')
+        ? '?limit=100'
+        : '?category=$categoryId&limit=100';
+    final response = await _apiClient.get('${ApiEndpoints.products}$query');
+    if (!response.success) throw Exception(response.message);
+    final list = response.data as List<dynamic>? ?? [];
+    return list.map((e) => ProductModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  /// Real call will be: POST /products
+  Future<List<ProductModel>> getBestSellers() async {
+    final response = await _apiClient.get(ApiEndpoints.bestSellers);
+    if (!response.success) throw Exception(response.message);
+    final list = response.data as List<dynamic>? ?? [];
+    return list.map((e) => ProductModel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<ProductModel> getProductById(String id) async {
+    final response = await _apiClient.get('${ApiEndpoints.products}/$id');
+    if (!response.success) throw Exception(response.message);
+    return ProductModel.fromJson(response.data as Map<String, dynamic>? ?? {});
+  }
+
+  /// Admin create — sent as multipart with no image files. Image
+  /// picking/upload isn't wired yet; the controller already handles
+  /// req.files being empty.
   Future<ProductModel> addProduct({
     required String name,
     required double price,
@@ -157,22 +56,22 @@ class ProductService {
     int stock = 0,
     String description = '',
   }) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    final product = ProductModel(
-      id: 'prod_${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      price: price,
-      categoryId: categoryId,
-      icon: icon,
-      iconBackground: const Color(0xFFEFF1F5),
-      stock: stock,
-      description: description,
+    final response = await _apiClient.multipart(
+      'POST',
+      ApiEndpoints.products,
+      fields: {
+        'name': name,
+        'price': '$price',
+        'category': categoryId,
+        'stock': '$stock',
+        'description': description,
+      },
+      requiresAuth: true,
     );
-    _catalog.add(product);
-    return product;
+    if (!response.success) throw Exception(response.message);
+    return ProductModel.fromJson(response.data as Map<String, dynamic>? ?? {});
   }
 
-  /// Real call will be: PUT /products/:id
   Future<void> updateProduct({
     required String id,
     required String name,
@@ -182,100 +81,39 @@ class ProductService {
     int stock = 0,
     String description = '',
   }) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    final index = _catalog.indexWhere((p) => p.id == id);
-    if (index == -1) return;
-    final existing = _catalog[index];
-    _catalog[index] = ProductModel(
-      id: id,
-      name: name,
-      price: price,
-      categoryId: categoryId,
-      icon: icon,
-      iconBackground: existing.iconBackground,
-      rating: existing.rating,
-      reviewCount: existing.reviewCount,
-      stock: stock,
-      description: description,
+    final response = await _apiClient.multipart(
+      'PUT',
+      '${ApiEndpoints.products}/$id',
+      fields: {
+        'name': name,
+        'price': '$price',
+        'category': categoryId,
+        'stock': '$stock',
+        'description': description,
+      },
+      requiresAuth: true,
     );
+    if (!response.success) throw Exception(response.message);
   }
 
-  /// Real call will be: DELETE /products/:id
   Future<void> deleteProduct(String id) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    _catalog.removeWhere((p) => p.id == id);
-  }
-
-  /// In-memory wishlist state (mirrors CartService's static-list
-  /// pattern) so a toggle from Product Details is reflected on the
-  /// Wishlist screen and vice versa, within the same app session.
-  static final Set<String> _wishlistIds = {'p1', 'p3', 'p9', 'p12'};
-
-  /// Mock saved-for-later items for the Wishlist screen.
-  Future<List<ProductModel>> getWishlist() async {
-    // Real call will be: GET /users/me/wishlist
-    await Future.delayed(const Duration(milliseconds: 400));
-    return _catalog.where((p) => _wishlistIds.contains(p.id)).toList();
+    final response = await _apiClient.delete('${ApiEndpoints.products}/$id', requiresAuth: true);
+    if (!response.success) throw Exception(response.message);
   }
 
   bool isInWishlist(String productId) => _wishlistIds.contains(productId);
 
-  /// Real call will be: POST/DELETE /users/me/wishlist/:productId
+  Future<List<ProductModel>> getWishlist() async {
+    final all = await getAllProducts();
+    return all.where((p) => _wishlistIds.contains(p.id)).toList();
+  }
+
   Future<void> toggleWishlist(String productId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
+    await Future.delayed(const Duration(milliseconds: 100));
     if (_wishlistIds.contains(productId)) {
       _wishlistIds.remove(productId);
     } else {
       _wishlistIds.add(productId);
     }
-  }
-
-  Future<List<ProductModel>> getBestSellers() async {
-    // Real call will be: GET /products?sort=best-sellers
-    await Future.delayed(const Duration(milliseconds: 500));
-    return const [
-      ProductModel(
-        id: 'p1',
-        name: 'Nike Air Max',
-        price: 2500,
-        categoryId: 'shoes',
-        icon: Icons.directions_walk_rounded,
-        iconBackground: Color(0xFFEFF1F5),
-        rating: 4.5,
-        reviewCount: 120,
-        description:
-        'The Nike Air Max combines style and comfort with its iconic design and advanced cushioning technology.',
-      ),
-      ProductModel(
-        id: 'p2',
-        name: 'Classic T-Shirt',
-        price: 700,
-        categoryId: 'clothes',
-        icon: Icons.checkroom_rounded,
-        iconBackground: Color(0xFFEFF1F5),
-        rating: 4.2,
-        reviewCount: 64,
-      ),
-      ProductModel(
-        id: 'p3',
-        name: 'Wireless Headphones',
-        price: 1800,
-        categoryId: 'electronics',
-        icon: Icons.headphones_rounded,
-        iconBackground: Color(0xFFEFF1F5),
-        rating: 4.6,
-        reviewCount: 98,
-      ),
-      ProductModel(
-        id: 'p4',
-        name: 'Smart Watch',
-        price: 2300,
-        categoryId: 'accessories',
-        icon: Icons.watch_rounded,
-        iconBackground: Color(0xFFEFF1F5),
-        rating: 4.3,
-        reviewCount: 51,
-      ),
-    ];
   }
 }

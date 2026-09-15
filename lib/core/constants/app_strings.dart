@@ -134,7 +134,9 @@ class AppStrings {
   static const String totalUsersLabel = 'Total Users';
   static const String totalRevenueLabel = 'Total Revenue';
   static const String salesOverviewTitle = 'Sales Overview';
-  static const String last7DaysLabel = 'Last 7 days';
+  static const String rangeWeekLabel = 'Week';
+  static const String rangeMonthLabel = 'Month';
+  static const String rangeYearLabel = 'Year';
   static const String recentOrdersTitle = 'Recent Orders';
   static const String viewAllLabel = 'View All';
 

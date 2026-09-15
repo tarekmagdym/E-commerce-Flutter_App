@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
-import '../../../models/cart_model.dart';
 import '../../../models/order_model.dart';
 
 class OrderDetailsScreen extends StatelessWidget {
@@ -36,7 +35,7 @@ class OrderDetailsScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          '${AppStrings.orderIdPrefix} ${order.id}',
+          '${AppStrings.orderIdPrefix} ${order.orderNumber}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -114,7 +113,7 @@ class OrderDetailsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${AppStrings.orderIdPrefix} ${order.id}',
+                  '${AppStrings.orderIdPrefix} ${order.orderNumber}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -223,8 +222,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildItemRow(CartItemModel item) {
-    final product = item.product;
+  Widget _buildItemRow(OrderItemModel item) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -238,10 +236,21 @@ class OrderDetailsScreen extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: product.iconBackground,
+              color: AppColors.background,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(product.icon, size: 22, color: AppColors.textPrimary),
+            clipBehavior: Clip.antiAlias,
+            child: item.image != null
+                ? Image.network(
+              item.image!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.shopping_bag_outlined,
+                size: 22,
+                color: AppColors.textPrimary,
+              ),
+            )
+                : const Icon(Icons.shopping_bag_outlined, size: 22, color: AppColors.textPrimary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -249,7 +258,7 @@ class OrderDetailsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product.name,
+                  item.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -267,7 +276,7 @@ class OrderDetailsScreen extends StatelessWidget {
             ),
           ),
           Text(
-            product.formattedPrice,
+            item.formattedPrice,
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
           ),
         ],

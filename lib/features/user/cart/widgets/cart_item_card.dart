@@ -18,8 +18,6 @@ class CartItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final product = item.product;
-
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -34,10 +32,10 @@ class CartItemCard extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: product.iconBackground,
+              color: const Color(0xFFEFF1F5),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(product.icon, size: 28, color: AppColors.textPrimary),
+            child: const Icon(Icons.shopping_bag_outlined, size: 28, color: AppColors.textPrimary),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -49,7 +47,7 @@ class CartItemCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        product.name,
+                        item.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -64,23 +62,15 @@ class CartItemCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       child: const Padding(
                         padding: EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.delete_outline_rounded,
-                          size: 20,
-                          color: AppColors.danger,
-                        ),
+                        child: Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.danger),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  product.formattedPrice,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
+                  item.formattedPrice,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.primary),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -91,11 +81,7 @@ class CartItemCard extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Text(
                         '${item.quantity}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       ),
                     ),
                     _StepperButton(icon: Icons.add, onTap: onIncrement),

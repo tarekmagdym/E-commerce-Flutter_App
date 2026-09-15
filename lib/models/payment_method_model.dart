@@ -37,4 +37,25 @@ class PaymentMethodModel {
       isDefault: isDefault ?? this.isDefault,
     );
   }
+
+  factory PaymentMethodModel.fromJson(Map<String, dynamic> json) {
+    return PaymentMethodModel(
+      id: (json['id'] ?? '').toString(),
+      brand: _brandFromString(json['brand'] as String?),
+      last4: json['last4'] as String? ?? '',
+      expiry: json['expiry'] as String? ?? '',
+      isDefault: json['isDefault'] as bool? ?? false,
+    );
+  }
+
+  static CardBrand _brandFromString(String? value) {
+    switch (value) {
+      case 'visa':
+        return CardBrand.visa;
+      case 'mastercard':
+        return CardBrand.mastercard;
+      default:
+        return CardBrand.other;
+    }
+  }
 }

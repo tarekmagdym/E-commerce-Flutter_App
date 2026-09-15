@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
-import '../../../models/cart_model.dart';
 import '../../../models/order_model.dart';
-import '../../../services/order_service.dart';
+import '../../../services/admin_service.dart';
 
 class AdminOrderDetailsScreen extends StatefulWidget {
   const AdminOrderDetailsScreen({super.key, required this.order});
@@ -15,7 +14,7 @@ class AdminOrderDetailsScreen extends StatefulWidget {
 }
 
 class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
-  final _service = OrderService();
+  final _service = AdminService();
 
   late OrderStatus _status;
   bool _isUpdating = false;
@@ -50,15 +49,23 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
   Future<void> _handleUpdateStatus(OrderStatus status) async {
     if (status == _status) return;
     setState(() => _isUpdating = true);
-    await _service.updateStatus(widget.order.id, status);
-    if (!mounted) return;
-    setState(() {
-      _status = status;
-      _isUpdating = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text(AppStrings.statusUpdatedMessage)),
-    );
+    try {
+      await _service.adminUpdateOrderStatus(widget.order.id, status);
+      if (!mounted) return;
+      setState(() {
+        _status = status;
+        _isUpdating = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(AppStrings.statusUpdatedMessage)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isUpdating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update status: $e')),
+      );
+    }
   }
 
   @override
@@ -69,7 +76,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          '${AppStrings.orderIdPrefix} ${order.id}',
+          '${AppStrings.orderIdPrefix} ${order.orderNumber}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -208,8 +215,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
     );
   }
 
-  Widget _buildItemRow(CartItemModel item) {
-    final product = item.product;
+  Widget _buildItemRow(OrderItemModel item) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -222,8 +228,16 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
           Container(
             width: 48,
             height: 48,
-            decoration: BoxDecoration(color: product.iconBackground, borderRadius: BorderRadius.circular(10)),
-            child: Icon(product.icon, size: 22, color: AppColors.textPrimary),
+            decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(10)),
+            clipBehavior: Clip.antiAlias,
+            child: item.image != null
+                ? Image.network(
+              item.image!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+              const Icon(Icons.shopping_bag_outlined, size: 22, color: AppColors.textPrimary),
+            )
+                : const Icon(Icons.shopping_bag_outlined, size: 22, color: AppColors.textPrimary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -231,7 +245,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product.name,
+                  item.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
@@ -242,7 +256,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
             ),
           ),
           Text(
-            product.formattedPrice,
+            item.formattedPrice,
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
           ),
         ],

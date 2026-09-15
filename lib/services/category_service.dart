@@ -1,60 +1,61 @@
 import 'package:flutter/material.dart';
+import '../core/network/api_client.dart';
+import '../core/network/api_endpoints.dart';
 import '../models/category_model.dart';
 
-/// Mock category data. The list is `static` so admin-side
-/// add/edit/delete actions persist within the same app session and
-/// are reflected back on the customer-facing Home/Categories/Products
-/// screens — there's no backend yet. Swap the bodies below for real
-/// API calls later — callers already treat everything here as async.
+/// Wired to the real backend. NOTE: the exact /api/categories
+/// request/response shape was inferred from this backend's very
+/// consistent {success, data} pattern (seen firsthand across auth,
+/// cart, orders, payment-methods, products) — categoryController.js
+/// itself wasn't available when this was written. If anything here
+/// doesn't match, the fix is isolated to this file.
 class CategoryService {
-  static final List<CategoryModel> _categories = [
-    const CategoryModel(id: 'all', name: 'All', icon: Icons.apps_rounded),
-    const CategoryModel(id: 'shoes', name: 'Shoes', icon: Icons.directions_walk_rounded),
-    const CategoryModel(id: 'clothes', name: 'Clothes', icon: Icons.checkroom_rounded),
-    const CategoryModel(id: 'electronics', name: 'Electronics', icon: Icons.headphones_rounded),
-    const CategoryModel(id: 'accessories', name: 'Accessories', icon: Icons.watch_rounded),
-  ];
+  CategoryService({ApiClient? apiClient}) : _apiClient = apiClient ?? const ApiClient();
+
+  final ApiClient _apiClient;
+
+  static const _allCategory = CategoryModel(id: 'all', name: 'All', icon: Icons.apps_rounded);
 
   Future<List<CategoryModel>> getCategories() async {
-    // Real call will be: GET /categories
-    await Future.delayed(const Duration(milliseconds: 400));
-    return List.unmodifiable(_categories);
+    final response = await _apiClient.get(ApiEndpoints.categories);
+    if (!response.success) throw Exception(response.message);
+    final list = response.data as List<dynamic>? ?? [];
+    final categories = list.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>)).toList();
+    return [_allCategory, ...categories];
   }
 
   /// Excludes the 'all' pseudo-category, which is a UI filter option
   /// rather than a real, admin-manageable category.
   Future<List<CategoryModel>> getManagedCategories() async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    return _categories.where((c) => c.id != 'all').toList();
+    final all = await getCategories();
+    return all.where((c) => c.id != 'all').toList();
   }
 
-  /// Real call will be: POST /categories
   Future<CategoryModel> addCategory({required String name, required IconData icon}) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final category = CategoryModel(
-      id: 'cat_${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      icon: icon,
+    final response = await _apiClient.post(
+      ApiEndpoints.categories,
+      body: {'name': name},
+      requiresAuth: true,
     );
-    _categories.add(category);
-    return category;
+    if (!response.success) throw Exception(response.message);
+    return CategoryModel.fromJson(response.data as Map<String, dynamic>? ?? {});
   }
 
-  /// Real call will be: PUT /categories/:id
   Future<void> updateCategory({
     required String id,
     required String name,
     required IconData icon,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final index = _categories.indexWhere((c) => c.id == id);
-    if (index == -1) return;
-    _categories[index] = CategoryModel(id: id, name: name, icon: icon);
+    final response = await _apiClient.put(
+      '${ApiEndpoints.categories}/$id',
+      body: {'name': name},
+      requiresAuth: true,
+    );
+    if (!response.success) throw Exception(response.message);
   }
 
-  /// Real call will be: DELETE /categories/:id
   Future<void> deleteCategory(String id) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    _categories.removeWhere((c) => c.id == id);
+    final response = await _apiClient.delete('${ApiEndpoints.categories}/$id', requiresAuth: true);
+    if (!response.success) throw Exception(response.message);
   }
 }

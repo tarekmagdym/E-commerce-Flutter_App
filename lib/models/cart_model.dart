@@ -1,20 +1,29 @@
-import 'product_model.dart';
-
 class CartItemModel {
   const CartItemModel({
-    required this.product,
-    this.quantity = 1,
+    required this.productId,
+    required this.name,
+    required this.price,
+    required this.quantity,
+    this.image,
   });
 
-  final ProductModel product;
+  final String productId;
+  final String name;
+  final double price;
   final int quantity;
+  final String? image;
 
-  double get lineTotal => product.price * quantity;
+  double get lineTotal => price * quantity;
 
-  CartItemModel copyWith({int? quantity}) {
+  String get formattedPrice => '\$${price.toStringAsFixed(0)}';
+
+  factory CartItemModel.fromJson(Map<String, dynamic> json) {
     return CartItemModel(
-      product: product,
-      quantity: quantity ?? this.quantity,
+      productId: (json['productId'] ?? '').toString(),
+      name: json['name'] as String? ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0,
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      image: json['image'] as String?,
     );
   }
 }

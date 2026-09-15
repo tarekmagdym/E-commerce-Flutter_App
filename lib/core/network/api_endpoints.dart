@@ -13,5 +13,18 @@ class ApiEndpoints {
 
   // TODO: paste the Google Cloud "Web application" OAuth client ID here
   // (the same value that goes into the backend's GOOGLE_CLIENT_ID).
-  static const String googleServerClientId = '498493561220-4ag7kn100jikppssaih73llu1c2bmaah.apps.googleusercontent.com';
+  static const String googleServerClientId = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
+
+  static const String adminDashboardStats = '/admin/dashboard/stats';
+  static const String adminDashboardSalesChart = '/admin/dashboard/sales-chart';
+  static const String adminDashboardRecentOrders = '/admin/dashboard/recent-orders';
+  static const String products = '/products';
+  static const String bestSellers = '/products/best-sellers';
+  static const String categories = '/categories';
+  static const String cart = '/cart';
+  static const String cartItems = '/cart/items';
+  static const String userAddresses = '/users/me/addresses';
+  static const String paymentMethods = '/payment-methods';
+  static const String orders = '/orders';
+  static const String adminOrders = '/admin/orders';
 }

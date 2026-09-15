@@ -25,8 +25,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final _service = AdminService();
 
   AdminStatsModel? _stats;
-  List<double> _weeklySales = [];
+  List<SalesPoint> _salesPoints = [];
   List<OrderModel> _recentOrders = [];
+  String _range = 'week';
+  bool _isChartLoading = false;
 
   bool _isLoading = true;
   bool _hasError = false;
@@ -46,14 +48,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     try {
       final results = await Future.wait([
         _service.getDashboardStats(),
-        _service.getWeeklySales(),
+        _service.getSalesChart(range: _range),
         _service.getRecentOrders(),
       ]);
 
       if (!mounted) return;
       setState(() {
         _stats = results[0] as AdminStatsModel;
-        _weeklySales = results[1] as List<double>;
+        _salesPoints = results[1] as List<SalesPoint>;
         _recentOrders = results[2] as List<OrderModel>;
         _isLoading = false;
       });
@@ -63,6 +65,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         _hasError = true;
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _onRangeChanged(String range) async {
+    if (range == _range) return;
+    setState(() {
+      _range = range;
+      _isChartLoading = true;
+    });
+
+    try {
+      final points = await _service.getSalesChart(range: range);
+      if (!mounted) return;
+      setState(() {
+        _salesPoints = points;
+        _isChartLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isChartLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not load that range. Try again.')),
+      );
     }
   }
 
@@ -117,42 +142,75 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 14,
-            childAspectRatio: 1.5,
-            children: [
-              StatisticCard(
-                icon: Icons.inventory_2_outlined,
-                iconBackground: AppColors.primary,
-                value: '${stats.totalProducts}',
-                label: AppStrings.totalProductsLabel,
-              ),
-              StatisticCard(
-                icon: Icons.shopping_cart_outlined,
-                iconBackground: AppColors.info,
-                value: '${stats.totalOrders}',
-                label: AppStrings.totalOrdersLabel,
-              ),
-              StatisticCard(
-                icon: Icons.people_outline_rounded,
-                iconBackground: AppColors.warning,
-                value: '${stats.totalUsers}',
-                label: AppStrings.totalUsersLabel,
-              ),
-              StatisticCard(
-                icon: Icons.attach_money_rounded,
-                iconBackground: AppColors.success,
-                value: stats.formattedRevenue,
-                label: AppStrings.totalRevenueLabel,
-              ),
-            ],
+          // FIX: replaced GridView.count(childAspectRatio: ...) with
+          // IntrinsicHeight rows. A fixed aspect ratio hardcoded a cell
+          // height that didn't fit the card's real content, causing the
+          // "BOTTOM OVERFLOWED" errors and clipped labels. Rows sized to
+          // their own content can never overflow, at any text scale —
+          // same 2x2 layout, same 14px gaps, same card visuals.
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: StatisticCard(
+                    icon: Icons.inventory_2_outlined,
+                    iconBackground: AppColors.primary,
+                    value: '${stats.totalProducts}',
+                    label: AppStrings.totalProductsLabel,
+                    changePercent: stats.productsChangePercent,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: StatisticCard(
+                    icon: Icons.shopping_cart_outlined,
+                    iconBackground: AppColors.info,
+                    value: '${stats.totalOrders}',
+                    label: AppStrings.totalOrdersLabel,
+                    changePercent: stats.ordersChangePercent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: StatisticCard(
+                    icon: Icons.people_outline_rounded,
+                    iconBackground: AppColors.warning,
+                    value: '${stats.totalUsers}',
+                    label: AppStrings.totalUsersLabel,
+                    changePercent: stats.usersChangePercent,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: StatisticCard(
+                    icon: Icons.attach_money_rounded,
+                    iconBackground: AppColors.success,
+                    value: stats.formattedRevenue,
+                    label: AppStrings.totalRevenueLabel,
+                    changePercent: stats.revenueChangePercent,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 20),
-          SalesChart(values: _weeklySales),
+          AnimatedOpacity(
+            opacity: _isChartLoading ? 0.5 : 1,
+            duration: const Duration(milliseconds: 150),
+            child: SalesChart(
+              points: _salesPoints,
+              range: _range,
+              onRangeChanged: _onRangeChanged,
+            ),
+          ),
           const SizedBox(height: 20),
           RecentOrders(
             orders: _recentOrders,

@@ -6,7 +6,7 @@ import '../../../core/widgets/admin_bottom_nav.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../../models/order_model.dart';
-import '../../../services/order_service.dart';
+import '../../../services/admin_service.dart';
 import 'admin_order_details_screen.dart';
 import '../profile/admin_profile_screen.dart';
 
@@ -18,7 +18,7 @@ class AdminOrdersScreen extends StatefulWidget {
 }
 
 class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
-  final _service = OrderService();
+  final _service = AdminService();
 
   List<OrderModel> _orders = [];
   OrderStatus? _selectedFilter;
@@ -38,7 +38,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     });
 
     try {
-      final orders = await _service.getOrders();
+      final orders = await _service.adminListOrders();
       if (!mounted) return;
       setState(() {
         _orders = orders;
@@ -222,7 +222,7 @@ class _AdminOrderTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${AppStrings.orderIdPrefix} ${order.id}',
+                    '${AppStrings.orderIdPrefix} ${order.orderNumber}',
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 3),

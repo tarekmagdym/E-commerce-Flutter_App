@@ -132,9 +132,9 @@ class _CartScreenState extends State<CartScreen> {
           final item = _items[index];
           return CartItemCard(
             item: item,
-            onIncrement: () => _updateQuantity(item.product.id, item.quantity + 1),
-            onDecrement: () => _updateQuantity(item.product.id, item.quantity - 1),
-            onRemove: () => _removeItem(item.product.id),
+            onIncrement: () => _updateQuantity(item.productId, item.quantity + 1),
+            onDecrement: () => _updateQuantity(item.productId, item.quantity - 1),
+            onRemove: () => _removeItem(item.productId),
           );
         },
       ),

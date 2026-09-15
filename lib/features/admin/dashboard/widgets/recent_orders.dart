@@ -81,7 +81,7 @@ class _RecentOrderTile extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              order.id,
+              order.orderNumber,
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
             ),
           ),
